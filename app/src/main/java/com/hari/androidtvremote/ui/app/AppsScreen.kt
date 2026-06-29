@@ -24,7 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.SubcomposeAsyncImage
 
 @Composable
 fun AppsScreen(
@@ -57,11 +59,25 @@ fun AppsScreen(
                         .clickable { onQuickApp(app.launchName) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = app.mark,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White
-                    )
+                    val markFallback: @Composable () -> Unit = {
+                        Text(
+                            text = app.mark,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White
+                        )
+                    }
+                    if (app.iconUrl != null) {
+                        SubcomposeAsyncImage(
+                            model = app.iconUrl,
+                            contentDescription = app.label,
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            contentScale = ContentScale.Fit,
+                            loading = { markFallback() },
+                            error = { markFallback() }
+                        )
+                    } else {
+                        markFallback()
+                    }
                 }
                 Text(
                     text = app.label,

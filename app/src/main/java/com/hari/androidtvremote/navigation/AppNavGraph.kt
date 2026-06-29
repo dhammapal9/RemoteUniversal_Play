@@ -38,7 +38,6 @@ import com.hari.androidtvremote.ui.app.MediaItemUi
 import com.hari.androidtvremote.ui.app.MediaKind
 import com.hari.androidtvremote.ui.app.OnboardingScreen
 import com.hari.androidtvremote.ui.app.RemotePadMode
-import com.hari.androidtvremote.ui.app.RemoteControlSettingsScreen
 import com.hari.androidtvremote.ui.app.SettingsScreen
 import com.hari.androidtvremote.ui.app.SplashRoute
 import com.hari.androidtvremote.ui.app.TvRemoteViewModel
@@ -280,21 +279,15 @@ fun AppNavGraph(
         // ── Settings ────────────────────────────────────────────────────────
         composable(Screen.Settings.route) {
             SettingsScreen(
-                autoReconnectEnabled = autoReconnectEnabled,
-                onBack = { navController.popBackStack() },
-                onOpenRemoteControls = { navController.navigate(Screen.RemoteControls.route) },
-                onOpenAppearance = { navController.navigate(Screen.Appearance.route) },
-                onAutoReconnectChange = { autoReconnectEnabled = it },
-            )
-        }
-        composable(Screen.RemoteControls.route) {
-            RemoteControlSettingsScreen(
                 hapticsEnabled = hapticsEnabled,
                 keepScreenAwake = keepScreenAwake,
+                autoReconnectEnabled = autoReconnectEnabled,
                 remoteApps = resolveRemoteShortcutApps(remoteAppOrder),
                 onBack = { navController.popBackStack() },
+                onOpenAppearance = { navController.navigate(Screen.Appearance.route) },
                 onHapticsChange = { hapticsEnabled = it },
                 onKeepScreenAwakeChange = { keepScreenAwake = it },
+                onAutoReconnectChange = { autoReconnectEnabled = it },
                 onRemoteAppOrderChange = { newOrder ->
                     remoteAppOrder = newOrder
                 },
