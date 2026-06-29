@@ -111,7 +111,6 @@ fun RemoteScreen(
         hasMicPermission = granted
         if (granted) onToggleVoice()
     }
-    val isNumberPadVisible = activePadMode == RemotePadMode.NumberPad
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
@@ -163,9 +162,6 @@ fun RemoteScreen(
                 activePadMode = activePadMode,
                 stageHeight = padStageHeight,
                 onAction = onRemoteKey
-            )
-            RemotePageIndicator(
-                isSecondarySelected = isNumberPadVisible
             )
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -229,33 +225,6 @@ private fun RemotePadStage(
                     onAction = onAction
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun RemotePageIndicator(
-    isSecondarySelected: Boolean,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        repeat(2) { index ->
-            val isSelected = if (index == 0) !isSecondarySelected else isSecondarySelected
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 6.dp)
-                    .size(if (isSelected) 12.dp else 10.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isSelected) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)
-                        }
-                    )
-            )
         }
     }
 }

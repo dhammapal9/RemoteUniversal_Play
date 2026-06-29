@@ -24,8 +24,8 @@ enum class HomeTab(val label: String, val icon: ImageVector) {
 }
 
 enum class RemotePadMode(val label: String, val icon: ImageVector) {
-    Touchpad("Touchpad", Icons.Filled.TouchApp),
     DPad("D-pad", Icons.Filled.GridView),
+    Touchpad("Touchpad", Icons.Filled.TouchApp),
     NumberPad("Number", Icons.Filled.Apps)
 }
 
