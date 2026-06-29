@@ -1,5 +1,6 @@
 package com.hari.androidtvremote.ui.app
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -30,6 +31,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
@@ -73,6 +75,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -135,50 +138,97 @@ fun RemoteControlSettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 item {
-                    SettingSubtitle(text = "Remote Controls")
-                }
-                item {
-                    SettingItemRow(
-                        title = "Haptic feedback",
-                        desc = "Vibrate on button presses",
-                        icon = Icons.Filled.TouchApp,
-                        onClick = { onHapticsChange(!hapticsEnabled) },
-                        action = {
-                            Switch(
-                                checked = hapticsEnabled,
-                                onCheckedChange = onHapticsChange
+                    SettingsSection(title = "Default Layout") {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Choose which control panel opens when the app starts.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            DefaultPadModeSelector(
+                                defaultPadMode = defaultPadMode,
+                                onDefaultPadModeChange = onDefaultPadModeChange
                             )
                         }
-                    )
+                    }
                 }
+
                 item {
-                    SettingItemRow(
-                        title = "Keep screen awake",
-                        desc = "Prevent sleep while using the remote",
-                        icon = Icons.Filled.Tv,
-                        onClick = { onKeepScreenAwakeChange(!keepScreenAwake) },
-                        action = {
-                            Switch(
-                                checked = keepScreenAwake,
-                                onCheckedChange = onKeepScreenAwakeChange
-                            )
+                    SettingsSection(title = "Interaction") {
+                        SettingsSwitchItem(
+                            title = "Haptic Feedback",
+                            desc = "Vibrate on button presses",
+                            icon = Icons.Filled.TouchApp,
+                            checked = hapticsEnabled,
+                            onCheckedChange = onHapticsChange
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+                        SettingsSwitchItem(
+                            title = "Keep Screen Awake",
+                            desc = "Prevent sleep while using the remote",
+                            icon = Icons.Filled.Tv,
+                            checked = keepScreenAwake,
+                            onCheckedChange = onKeepScreenAwakeChange
+                        )
+                    }
+                }
+
+                item {
+                    SettingsSection(title = "Manage Applications") {
+                        Surface(
+                            onClick = { showAppOrderDialog = true },
+                            color = Color.Transparent
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Apps,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Quick-launch Order",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Drag and arrange app positions",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                )
+                            }
                         }
-                    )
-                }
-                item {
-                    SettingSubtitle(text = "Manage Applications")
-                }
-                item {
-                    SettingItemRow(
-                        title = "Quick-launch order",
-                        desc = "Drag and arrange the app positions shown on the remote",
-                        icon = Icons.Filled.Apps,
-                        onClick = {
-                            showAppOrderDialog = true
-                        }
-                    )
+                    }
                 }
             }
         }
@@ -516,39 +566,59 @@ private fun DefaultPadModeSelector(
     ) {
         layoutModes.forEach { mode ->
             val isSelected = defaultPadMode == mode
-            FilledTonalButton(
+            Surface(
                 onClick = { onDefaultPadModeChange(mode) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    },
-                    contentColor = if (isSelected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
+                shape = RoundedCornerShape(20.dp),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+                },
+                border = if (isSelected) {
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                } else null
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = if (mode == RemotePadMode.Touchpad) {
-                            Icons.Filled.TouchApp
+                    Surface(
+                        shape = CircleShape,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            Icons.Filled.GridView
+                            MaterialTheme.colorScheme.surfaceContainerHighest
                         },
-                        contentDescription = null
-                    )
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (mode == RemotePadMode.Touchpad) {
+                                    Icons.Filled.TouchApp
+                                } else {
+                                    Icons.Filled.GridView
+                                },
+                                contentDescription = null,
+                                tint = if (isSelected) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = mode.label,
-                        modifier = Modifier.padding(start = 10.dp)
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     )
                 }
             }

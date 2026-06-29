@@ -16,8 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import com.hari.androidtvremote.ui.theme.palette.TonalPalettes
-import com.hari.androidtvremote.ui.theme.palette.TonalPalettes.Companion.getSystemTonalPalettes
-import com.hari.androidtvremote.ui.theme.palette.TonalPalettes.Companion.toTonalPalettes
+import com.hari.androidtvremote.ui.theme.palette.getSystemTonalPalettes
+import com.hari.androidtvremote.ui.theme.palette.toTonalPalettes
 
 object PresetColor {
 

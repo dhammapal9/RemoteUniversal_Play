@@ -41,7 +41,6 @@ import com.hari.androidtvremote.ui.app.RemotePadMode
 import com.hari.androidtvremote.ui.app.RemoteControlSettingsScreen
 import com.hari.androidtvremote.ui.app.SettingsScreen
 import com.hari.androidtvremote.ui.app.SplashRoute
-import com.hari.androidtvremote.ui.app.TipsSupportScreen
 import com.hari.androidtvremote.ui.app.TvRemoteViewModel
 import com.hari.androidtvremote.ui.app.decodeRemoteShortcutOrder
 import com.hari.androidtvremote.ui.app.encodeRemoteShortcutOrder
@@ -285,7 +284,6 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onOpenRemoteControls = { navController.navigate(Screen.RemoteControls.route) },
                 onOpenAppearance = { navController.navigate(Screen.Appearance.route) },
-                onOpenTipsSupport = { navController.navigate(Screen.TipsSupport.route) },
                 onAutoReconnectChange = { autoReconnectEnabled = it },
             )
         }
@@ -309,11 +307,6 @@ fun AppNavGraph(
         }
         composable(Screen.Appearance.route) {
             AppearanceScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-        composable(Screen.TipsSupport.route) {
-            TipsSupportScreen(
                 onBack = { navController.popBackStack() }
             )
         }

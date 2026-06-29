@@ -116,7 +116,7 @@ data class TonalPalettes(
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun primarySystem(context: Context, tone: TonalValue): Color = when (tone) {
+    internal fun primarySystem(context: Context, tone: TonalValue): Color = when (tone) {
         0 -> ColorResourceHelper.getColor(context, android.R.color.system_accent1_1000)
         10 -> ColorResourceHelper.getColor(context, android.R.color.system_accent1_900)
         20 -> ColorResourceHelper.getColor(context, android.R.color.system_accent1_800)
@@ -134,7 +134,7 @@ data class TonalPalettes(
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun secondarySystem(context: Context, tone: TonalValue): Color = when (tone) {
+    internal fun secondarySystem(context: Context, tone: TonalValue): Color = when (tone) {
         0 -> ColorResourceHelper.getColor(context, android.R.color.system_accent2_1000)
         10 -> ColorResourceHelper.getColor(context, android.R.color.system_accent2_900)
         20 -> ColorResourceHelper.getColor(context, android.R.color.system_accent2_800)
@@ -152,7 +152,7 @@ data class TonalPalettes(
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun tertiarySystem(context: Context, tone: TonalValue): Color = when (tone) {
+    internal fun tertiarySystem(context: Context, tone: TonalValue): Color = when (tone) {
         0 -> ColorResourceHelper.getColor(context, android.R.color.system_accent3_1000)
         10 -> ColorResourceHelper.getColor(context, android.R.color.system_accent3_900)
         20 -> ColorResourceHelper.getColor(context, android.R.color.system_accent3_800)
@@ -170,7 +170,7 @@ data class TonalPalettes(
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun neutralSystem(context: Context, tone: TonalValue): Color = when (tone) {
+    internal fun neutralSystem(context: Context, tone: TonalValue): Color = when (tone) {
         0 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral1_1000)
         10 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral1_900)
         20 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral1_800)
@@ -188,13 +188,13 @@ data class TonalPalettes(
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun neutralVariantSystem(context: Context, tone: TonalValue): Color = when (tone) {
+    internal fun neutralVariantSystem(context: Context, tone: TonalValue): Color = when (tone) {
         0 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_1000)
         10 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_900)
         20 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_800)
         30 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_700)
         40 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_600)
-        50 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_500)
+        50 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_50)
         60 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_400)
         70 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_300)
         80 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_200)
@@ -204,42 +204,39 @@ data class TonalPalettes(
         100 -> ColorResourceHelper.getColor(context, android.R.color.system_neutral2_0)
         else -> throw IllegalArgumentException("Unknown neutral variant tone: $tone")
     }
+}
 
-    companion object {
+@Composable
+@Stable
+fun Color.toTonalPalettes(): TonalPalettes {
+    val zcam = toRgb().toZcam()
+    return TonalPalettes(hue = zcam.hz, primaryChroma = zcam.Cz)
+}
 
-        @Composable
-        @Stable
-        fun Color.toTonalPalettes(): TonalPalettes {
-            val zcam = toRgb().toZcam()
-            return TonalPalettes(hue = zcam.hz, primaryChroma = zcam.Cz)
-        }
-
-        @RequiresApi(Build.VERSION_CODES.S)
-        @Composable
-        @Stable
-        fun Context.getSystemTonalPalettes(): TonalPalettes {
-            val tonalPalettes = TonalPalettes(238.36, 15.0)
-            tonalTokens.forEach {
-                tonalPalettes.primary[it] = tonalPalettes.primarySystem(this, it)
-            }
-            tonalTokens.forEach {
-                tonalPalettes.secondary[it] = tonalPalettes.secondarySystem(this, it)
-            }
-            tonalTokens.forEach {
-                tonalPalettes.tertiary[it] = tonalPalettes.tertiarySystem(this, it)
-            }
-            tonalTokens.forEach {
-                tonalPalettes.neutral[it] = tonalPalettes.neutralSystem(this, it)
-            }
-            tonalTokens.forEach {
-                tonalPalettes.neutralVariant[it] = tonalPalettes.neutralVariantSystem(this, it)
-            }
-            tonalTokens.forEach {
-                tonalPalettes error it
-            }
-            return tonalPalettes
-        }
+@RequiresApi(Build.VERSION_CODES.S)
+@Composable
+@Stable
+fun Context.getSystemTonalPalettes(): TonalPalettes {
+    val tonalPalettes = TonalPalettes(238.36, 15.0)
+    tonalTokens.forEach {
+        tonalPalettes.primary[it] = tonalPalettes.primarySystem(this, it)
     }
+    tonalTokens.forEach {
+        tonalPalettes.secondary[it] = tonalPalettes.secondarySystem(this, it)
+    }
+    tonalTokens.forEach {
+        tonalPalettes.tertiary[it] = tonalPalettes.tertiarySystem(this, it)
+    }
+    tonalTokens.forEach {
+        tonalPalettes.neutral[it] = tonalPalettes.neutralSystem(this, it)
+    }
+    tonalTokens.forEach {
+        tonalPalettes.neutralVariant[it] = tonalPalettes.neutralVariantSystem(this, it)
+    }
+    tonalTokens.forEach {
+        tonalPalettes error it
+    }
+    return tonalPalettes
 }
 
 @RequiresApi(23)
