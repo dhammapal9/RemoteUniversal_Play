@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager
 import com.connectsdk.discovery.DiscoveryManager
 import com.connectsdk.discovery.provider.CastDiscoveryProvider
 import com.connectsdk.service.CastService
+import com.google.android.gms.ads.MobileAds
 import com.hari.androidtvremote.androidLib.AndroidRemoteTv
 import com.hari.androidtvremote.utils.Constant
 import com.hari.androidtvremote.utils.WebServer
@@ -43,6 +44,8 @@ class App : Application() {
         } else {
             Timber.plant(CrashlyticsTree())
         }
+
+        MobileAds.initialize(this)
 
         // Init must happen on main thread (reads application context only)
         DiscoveryManager.init(applicationContext)

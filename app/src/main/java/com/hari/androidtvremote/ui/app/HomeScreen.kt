@@ -184,6 +184,7 @@ fun HomeScreen(
             bottomBar = {
                 // ── ReadYou-style bottom nav ──
                 Column {
+                    AdmobBanner(modifier = Modifier.padding(bottom = 8.dp))
                     HorizontalDivider(
                         modifier = Modifier.fillMaxWidth(),
                         thickness = 0.5.dp,

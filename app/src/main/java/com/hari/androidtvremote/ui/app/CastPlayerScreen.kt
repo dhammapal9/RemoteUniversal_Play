@@ -113,6 +113,9 @@ fun CastPlayerScreen(
                         }
                     }
                 )
+            },
+            bottomBar = {
+                AdmobBanner(modifier = Modifier.padding(bottom = 8.dp))
             }
         ) { innerPadding ->
             if (mediaItem == null) {

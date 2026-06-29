@@ -156,6 +156,9 @@ fun DeviceDiscoveryScreen(
                         }
                     }
                 )
+            },
+            bottomBar = {
+                AdmobBanner(modifier = Modifier.padding(bottom = 8.dp))
             }
         ) { innerPadding ->
             LazyColumn(

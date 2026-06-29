@@ -152,6 +152,9 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
+    // AdMob
+    implementation(libs.play.services.ads)
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

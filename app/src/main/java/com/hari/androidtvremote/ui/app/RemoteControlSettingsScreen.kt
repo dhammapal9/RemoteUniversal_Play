@@ -130,6 +130,9 @@ fun RemoteControlSettingsScreen(
                     scrollBehavior = scrollBehavior
                 )
             },
+            bottomBar = {
+                AdmobBanner(modifier = Modifier.padding(bottom = 8.dp))
+            },
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         ) { innerPadding ->
             LazyColumn(

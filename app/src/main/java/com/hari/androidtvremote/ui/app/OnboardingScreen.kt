@@ -165,6 +165,7 @@ fun OnboardingScreen(
                         Text(if (pageIndex == pages.lastIndex) "Start" else "Next")
                     }
                 }
+                AdmobBanner(modifier = Modifier.padding(top = 16.dp))
             }
         }
     }

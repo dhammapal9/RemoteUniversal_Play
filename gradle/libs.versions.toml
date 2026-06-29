@@ -33,6 +33,7 @@ media3 = "1.7.1"
 uiTextGoogleFonts = "1.10.6"
 foundation = "1.11.0"
 googleServicesPlugin = "4.4.2"
+playServicesAds = "23.6.0"
 firebaseCrashlyticsPlugin = "3.0.3"
 firebaseBom = "33.10.0"
 
@@ -104,6 +105,9 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "viewModelCompose" }
 androidx-compose-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+
+# AdMob
+play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 
 # Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
