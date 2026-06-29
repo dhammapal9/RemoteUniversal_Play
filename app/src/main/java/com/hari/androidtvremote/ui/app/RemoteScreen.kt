@@ -13,6 +13,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -80,12 +82,30 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import com.hari.androidtvremote.androidLib.remote.Remotemessage
+import com.hari.androidtvremote.ui.theme.AccentBorderBrush
+import com.hari.androidtvremote.ui.theme.AccentBorderSoftBrush
+import com.hari.androidtvremote.ui.theme.AccentRingBrush
+import com.hari.androidtvremote.ui.theme.OkButtonBrush
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+
+@Composable
+private fun rememberPressScale(
+    interactionSource: MutableInteractionSource,
+    pressedScale: Float = 0.92f,
+): Float {
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 620f),
+        label = "buttonPressScale"
+    )
+    return scale
+}
 
 @Composable
 fun RemoteScreen(
@@ -347,19 +367,18 @@ private fun RemoteVerticalRocker(
     onTopClick: () -> Unit,
     onBottomClick: () -> Unit,
 ) {
+    val rockerShape = RoundedCornerShape(30.dp)
     Box(
         modifier = modifier
             .height(height)
-            .clip(RoundedCornerShape(30.dp))
-            .background(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(30.dp)
-            )
+            .clip(rockerShape)
+            .background(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(width = 1.5.dp, brush = AccentBorderBrush, shape = rockerShape)
     ) {
+        val topInteraction = remember { MutableInteractionSource() }
+        val bottomInteraction = remember { MutableInteractionSource() }
+        val topScale = rememberPressScale(topInteraction, pressedScale = 0.90f)
+        val bottomScale = rememberPressScale(bottomInteraction, pressedScale = 0.90f)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -370,13 +389,19 @@ private fun RemoteVerticalRocker(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clickable(onClick = onTopClick),
+                    .clickable(
+                        interactionSource = topInteraction,
+                        indication = androidx.compose.foundation.LocalIndication.current,
+                        onClick = onTopClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = topIcon,
                     contentDescription = "$label up",
-                    modifier = Modifier.size(iconSize),
+                    modifier = Modifier
+                        .size(iconSize)
+                        .scale(topScale),
                     tint = contentColor
                 )
             }
@@ -390,13 +415,19 @@ private fun RemoteVerticalRocker(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clickable(onClick = onBottomClick),
+                    .clickable(
+                        interactionSource = bottomInteraction,
+                        indication = androidx.compose.foundation.LocalIndication.current,
+                        onClick = onBottomClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = bottomIcon,
                     contentDescription = "$label down",
-                    modifier = Modifier.size(iconSize),
+                    modifier = Modifier
+                        .size(iconSize)
+                        .scale(bottomScale),
                     tint = contentColor
                 )
             }
@@ -413,11 +444,20 @@ private fun RemoteActionBubble(
     emphasized: Boolean = false,
     iconSize: Dp,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressScale = rememberPressScale(interactionSource, pressedScale = 0.88f)
     FilledTonalIconButton(
         modifier = modifier
-            .aspectRatio(1f),
+            .aspectRatio(1f)
+            .scale(pressScale)
+            .border(
+                width = 1.5.dp,
+                brush = if (emphasized) AccentBorderBrush else AccentBorderSoftBrush,
+                shape = CircleShape
+            ),
         onClick = onClick,
         shape = CircleShape,
+        interactionSource = interactionSource,
         colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = if (emphasized) {
                 MaterialTheme.colorScheme.primaryContainer
@@ -480,7 +520,9 @@ private fun GoogleTvDPad(
             contentAlignment = Alignment.Center
         ) {
             Surface(
-                modifier = Modifier.matchParentSize(),
+                modifier = Modifier
+                    .matchParentSize()
+                    .border(width = 2.dp, brush = AccentRingBrush, shape = CircleShape),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shadowElevation = 16.dp
@@ -609,26 +651,20 @@ private fun GoogleTvDPad(
                         activate(DPadZone.Center, Remotemessage.RemoteKeyCode.KEYCODE_DPAD_CENTER)
                     },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
+                color = Color.Transparent,
                 shadowElevation = 18.dp
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                                    Brush.radialGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
-                                    MaterialTheme.colorScheme.surface
-                                )
-                            )
-                        ),
+                        .background(OkButtonBrush)
+                        .border(width = 1.5.dp, brush = AccentBorderBrush, shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "OK",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White
                     )
                 }
             }
@@ -776,8 +812,8 @@ private fun TouchpadPanel(
                 )
             )
             .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                width = 1.8.dp,
+                brush = AccentBorderBrush,
                 shape = RoundedCornerShape(34.dp)
             )
             .pointerInput(Unit) {
@@ -840,7 +876,7 @@ private fun TouchpadPanel(
                 .padding(10.dp)
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f),
+                    brush = AccentBorderSoftBrush,
                     shape = RoundedCornerShape(28.dp)
                 )
         )
@@ -892,12 +928,12 @@ private fun NumberPadPanel(
     val buttonPadding = if (width < 260.dp) 12.dp else 16.dp
     val gridSpacing = if (width < 260.dp) 8.dp else 12.dp
 
+    val padShape = RoundedCornerShape(28.dp)
     Column(
         modifier = Modifier
             .width(width)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(padShape)
             .background(
-                
                 Brush.linearGradient(
                     listOf(
                         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f),
@@ -906,6 +942,7 @@ private fun NumberPadPanel(
                     )
                 )
             )
+            .border(width = 1.5.dp, brush = AccentBorderBrush, shape = padShape)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(gridSpacing)
     ) {
@@ -915,12 +952,20 @@ private fun NumberPadPanel(
                 horizontalArrangement = Arrangement.spacedBy(gridSpacing)
             ) {
                 row.forEach { (label, keyCode) ->
+                    val keyShape = RoundedCornerShape(18.dp)
+                    val keyInteraction = remember { MutableInteractionSource() }
+                    val keyScale = rememberPressScale(keyInteraction, pressedScale = 0.90f)
                     FilledTonalButton(
                         onClick = { onAction(keyCode) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .scale(keyScale)
+                            .border(width = 1.2.dp, brush = AccentBorderSoftBrush, shape = keyShape),
+                        shape = keyShape,
+                        interactionSource = keyInteraction,
                         colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         contentPadding = PaddingValues(vertical = buttonPadding)
                     ) {

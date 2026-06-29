@@ -37,7 +37,7 @@ fun Context.themeIndexFlow(): Flow<Int> =
     appearanceDataStore.data.map { it[AppearanceKeys.THEME_INDEX] ?: 0 }
 
 fun Context.darkThemeFlow(): Flow<Int> =
-    appearanceDataStore.data.map { it[AppearanceKeys.DARK_THEME] ?: DarkThemePreference.UseDeviceTheme.value }
+    appearanceDataStore.data.map { it[AppearanceKeys.DARK_THEME] ?: DarkThemePreference.Amoled.value }
 
 
 fun Context.customColorFlow(): Flow<String> =

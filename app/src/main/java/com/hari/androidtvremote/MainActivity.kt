@@ -16,6 +16,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hari.androidtvremote.navigation.AppNavGraph
 
+import com.hari.androidtvremote.preference.AmoledDarkTheme
+import com.hari.androidtvremote.preference.LocalAmoledDarkTheme
 import com.hari.androidtvremote.preference.LocalDarkTheme
 import com.hari.androidtvremote.preference.LocalThemeIndex
 
@@ -48,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
             // Collect appearance DataStore flows as Compose state
             val darkThemeInt by context.darkThemeFlow()
-                .collectAsStateWithLifecycle(initialValue = DarkThemePreference.UseDeviceTheme.value)
+                .collectAsStateWithLifecycle(initialValue = DarkThemePreference.Amoled.value)
             val themeIndex by context.themeIndexFlow()
                 .collectAsStateWithLifecycle(initialValue = 0)
 
@@ -56,6 +58,7 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalDarkTheme provides darkTheme,
                 LocalThemeIndex provides themeIndex,
+                LocalAmoledDarkTheme provides AmoledDarkTheme(darkTheme.isAmoled()),
             ) {
                 AndroidTVRemoteTheme {
                     AppNavGraph(

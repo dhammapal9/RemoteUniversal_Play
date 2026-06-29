@@ -2,13 +2,13 @@ package com.hari.androidtvremote.ui.app
 
 import android.app.Activity
 import android.os.Build
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandIn
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -30,14 +30,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
@@ -61,8 +61,11 @@ import com.hari.androidtvremote.preference.DarkThemePreference
 import com.hari.androidtvremote.preference.LocalDarkTheme
 import com.hari.androidtvremote.preference.LocalThemeIndex
 import com.hari.androidtvremote.preference.appearanceDataStore
+import com.hari.androidtvremote.ui.theme.AccentBorderBrush
 import com.hari.androidtvremote.ui.theme.palette.TonalPalettes
 import com.hari.androidtvremote.ui.theme.palette.dynamic.extractTonalPalettesFromUserWallpaper
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -91,14 +94,10 @@ fun AppearanceScreen(
         }
     }
 
-    fun updateDarkTheme(enabled: Boolean) {
+    fun updateDarkTheme(pref: DarkThemePreference) {
         scope.launch {
             context.appearanceDataStore.edit { prefs ->
-                prefs[AppearanceKeys.DARK_THEME] = if (enabled) {
-                    DarkThemePreference.Dark.value
-                } else {
-                    DarkThemePreference.Light.value
-                }
+                prefs[AppearanceKeys.DARK_THEME] = pref.value
             }
         }
     }
@@ -156,24 +155,12 @@ fun AppearanceScreen(
                     )
                 }
                 item {
-                    SettingSubtitle(text = "Dark Theme")
+                    SettingSubtitle(text = "Theme Mode")
                 }
                 item {
-                    SettingItemRow(
-                        title = "Dark theme",
-                        desc = if (currentDarkTheme == DarkThemePreference.Dark) {
-                            "Enabled"
-                        } else {
-                            "Disabled"
-                        },
-                        icon = Icons.Outlined.Palette,
-                        onClick = { updateDarkTheme(currentDarkTheme != DarkThemePreference.Dark) },
-                        action = {
-                            Switch(
-                                checked = currentDarkTheme == DarkThemePreference.Dark,
-                                onCheckedChange = ::updateDarkTheme
-                            )
-                        }
+                    ThemeModeSelector(
+                        current = currentDarkTheme,
+                        onSelect = ::updateDarkTheme
                     )
                 }
             }
@@ -279,3 +266,98 @@ private fun PaletteChip(
 }
 
 private const val BASIC_PALETTE_COUNT = 4
+
+@Composable
+private fun ThemeModeSelector(
+    current: DarkThemePreference,
+    onSelect: (DarkThemePreference) -> Unit,
+) {
+    val options = listOf(
+        ThemeModeOption(DarkThemePreference.Amoled, "AMOLED", Icons.Outlined.AutoAwesome),
+        ThemeModeOption(DarkThemePreference.UseDeviceTheme, "System", Icons.Outlined.PhoneAndroid),
+        ThemeModeOption(DarkThemePreference.Dark, "Dark", Icons.Outlined.DarkMode),
+        ThemeModeOption(DarkThemePreference.Light, "Light", Icons.Outlined.LightMode),
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        options.forEach { option ->
+            ThemeModeChip(
+                modifier = Modifier.weight(1f),
+                label = option.label,
+                icon = option.icon,
+                selected = current == option.pref,
+                onClick = { onSelect(option.pref) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ThemeModeChip(
+    modifier: Modifier = Modifier,
+    label: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(18.dp)
+    val container = if (selected) {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    }
+    Box(
+        modifier = modifier
+            .height(96.dp)
+            .clip(shape)
+            .background(container)
+            .then(
+                if (selected) {
+                    Modifier.border(width = 1.5.dp, brush = AccentBorderBrush, shape = shape)
+                } else {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        shape = shape
+                    )
+                }
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    }
+}
+
+private data class ThemeModeOption(
+    val pref: DarkThemePreference,
+    val label: String,
+    val icon: ImageVector,
+)
