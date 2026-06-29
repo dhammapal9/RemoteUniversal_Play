@@ -6,10 +6,12 @@ import android.net.Uri
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.outlined.Cast
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,12 +71,14 @@ private val HomeTab.outlinedIcon: ImageVector
     get() = when (this) {
         HomeTab.Remote -> Icons.Outlined.Tv
         HomeTab.Cast -> Icons.Outlined.Cast
+        HomeTab.Settings -> Icons.Outlined.Settings
     }
 
 private val HomeTab.filledIcon: ImageVector
     get() = when (this) {
         HomeTab.Remote -> Icons.Filled.Tv
         HomeTab.Cast -> Icons.Filled.Cast
+        HomeTab.Settings -> Icons.Filled.Settings
     }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -173,9 +178,6 @@ fun HomeScreen(
                                 }
                             )
                         }
-                        IconButton(onClick = onOpenSettings) {
-                            Icon(Icons.Filled.Settings, contentDescription = "Settings")
-                        }
                     }
                 )
             },
@@ -205,7 +207,13 @@ fun HomeScreen(
 
                             NavigationBarItem(
                                 selected = selected,
-                                onClick = { onTabSelected(tab) },
+                                onClick = {
+                                    if (tab == HomeTab.Settings) {
+                                        onOpenSettings()
+                                    } else {
+                                        onTabSelected(tab)
+                                    }
+                                },
                                 icon = {
                                     Icon(
                                         imageVector = if (selected) tab.filledIcon else tab.outlinedIcon,
@@ -287,6 +295,10 @@ fun HomeScreen(
                             }
                         }
                     )
+
+                    HomeTab.Settings -> {
+                        Box(Modifier.fillMaxSize())
+                    }
                 }
             }
         }

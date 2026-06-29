@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -15,7 +16,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
     Remote("Remote", Icons.Filled.Tv),
-    Cast("Cast", Icons.Filled.Cast)
+    Cast("Cast", Icons.Filled.Cast),
+    Settings("Settings", Icons.Filled.Settings)
 }
 
 enum class RemotePadMode(val label: String, val icon: ImageVector) {
