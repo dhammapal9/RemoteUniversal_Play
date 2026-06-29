@@ -121,7 +121,6 @@ fun HomeScreen(
     hapticsEnabled: Boolean,
     remoteApps: List<RemoteShortcutApp>,
     onTabSelected: (HomeTab) -> Unit,
-    onCyclePadMode: () -> Unit,
     onSetPadMode: (RemotePadMode) -> Unit = {},
     onOpenDiscovery: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -254,14 +253,16 @@ fun HomeScreen(
             bottomBar = {
                 // ── ReadYou-style bottom nav ──
                 Column {
-                    AdmobBanner(modifier = Modifier.padding(bottom = 8.dp))
+                    AdmobBanner(modifier = Modifier.padding(bottom = 2.dp))
                     HorizontalDivider(
                         modifier = Modifier.fillMaxWidth(),
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                     )
                     NavigationBar(
-                        modifier = Modifier.navigationBarsPadding(),
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .height(68.dp),
                         containerColor = Color.Transparent,   // transparent — backdrop shows through
                         tonalElevation = 0.dp
                     ) {
@@ -319,8 +320,6 @@ fun HomeScreen(
                         activePadMode = activePadMode,
                         defaultPadMode = defaultPadMode,
                         sessionState = sessionState,
-                        onRequireConnection = onOpenDiscovery,
-                        onCyclePadMode = onCyclePadMode,
                         onRemoteKey = { key -> handleRemoteAction { onRemoteKey(key) } },
                         onVolumeUp = { handleRemoteAction(onVolumeUp) },
                         onVolumeDown = { handleRemoteAction(onVolumeDown) },

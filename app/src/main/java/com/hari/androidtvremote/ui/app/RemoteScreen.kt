@@ -13,7 +13,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,40 +34,31 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.KeyboardBackspace
-import androidx.compose.material.icons.automirrored.filled.VolumeMute
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,12 +73,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -103,22 +87,12 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-
-private data class RemoteMediaAction(
-    val icon: ImageVector,
-    val contentDescription: String,
-    val onClick: () -> Unit,
-)
-
-
 @Composable
 fun RemoteScreen(
     modifier: Modifier = Modifier,
     activePadMode: RemotePadMode,
     defaultPadMode: RemotePadMode,
     sessionState: TvRemoteUiState,
-    onRequireConnection: () -> Unit,
-    onCyclePadMode: () -> Unit,
     onRemoteKey: (Remotemessage.RemoteKeyCode) -> Unit,
     onVolumeUp: () -> Unit,
     onVolumeDown: () -> Unit,
@@ -137,32 +111,6 @@ fun RemoteScreen(
         hasMicPermission = granted
         if (granted) onToggleVoice()
     }
-    val isConnected = sessionState.connectedDevice != null
-    val mediaActions = remember(onRemoteKey) {
-        listOf(
-            RemoteMediaAction(
-                icon = Icons.Filled.FastRewind,
-                contentDescription = "Rewind",
-                onClick = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_REWIND) }
-            ),
-            RemoteMediaAction(
-                icon = Icons.Filled.PlayArrow,
-                contentDescription = "Play or pause",
-                onClick = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_PLAY_PAUSE) }
-            ),
-            RemoteMediaAction(
-                icon = Icons.Filled.FastForward,
-                contentDescription = "Fast forward",
-                onClick = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_FAST_FORWARD) }
-            ),
-            RemoteMediaAction(
-                icon = Icons.Filled.Stop,
-                contentDescription = "Stop",
-                onClick = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_STOP) }
-            )
-        )
-    }
-    val primaryPadMode = defaultPadMode.primaryMode()
     val isNumberPadVisible = activePadMode == RemotePadMode.NumberPad
 
     BoxWithConstraints(
@@ -177,11 +125,6 @@ fun RemoteScreen(
             maxHeight < 620.dp -> 8.dp
             maxHeight < 760.dp -> 12.dp
             else -> 16.dp
-        }
-        val shelfButtonSize = when {
-            maxWidth < 360.dp -> 52.dp
-            maxWidth < 420.dp -> 58.dp
-            else -> 64.dp
         }
         val actionIconSize = when {
             maxWidth < 360.dp -> 22.dp
@@ -213,15 +156,9 @@ fun RemoteScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = horizontalPadding, vertical = 10.dp),
+                .padding(horizontal = horizontalPadding, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(verticalGap)
         ) {
-            MediaButtonStrip(
-                actions = mediaActions,
-                buttonSize = shelfButtonSize
-            )
-
-            Spacer(modifier = Modifier.height(15.dp))
             RemotePadStage(
                 activePadMode = activePadMode,
                 stageHeight = padStageHeight,
@@ -230,17 +167,14 @@ fun RemoteScreen(
             RemotePageIndicator(
                 isSecondarySelected = isNumberPadVisible
             )
-            Spacer(modifier = Modifier.height(15.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             RemoteControlDeck(
                 isVoiceActive = sessionState.isVoiceActive,
-                isNumberPadVisible = isNumberPadVisible,
-                primaryPadMode = primaryPadMode,
                 rockerWidth = rockerWidth,
                 rockerHeight = rockerHeight,
                 controlSpacing = controlSpacing,
                 actionIconSize = actionIconSize,
-                onSwitchPad = onCyclePadMode,
                 onVoice = {
                     if (hasMicPermission) {
                         onToggleVoice()
@@ -252,43 +186,12 @@ fun RemoteScreen(
                 onVolumeDown = onVolumeDown,
                 onVolumeUp = onVolumeUp,
                 onChannelUp = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_CHANNEL_UP) },
-                onChannelDown = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_CHANNEL_DOWN) }
+                onChannelDown = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_CHANNEL_DOWN) },
+                onRewind = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_REWIND) },
+                onPlayPause = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_PLAY_PAUSE) },
+                onFastForward = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_FAST_FORWARD) },
+                onStop = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_MEDIA_STOP) }
             )
-        }
-    }
-}
-
-@Composable
-private fun MediaButtonStrip(
-    actions: List<RemoteMediaAction>,
-    buttonSize: Dp,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        actions.forEach { action ->
-            FilledTonalButton(
-                onClick = action.onClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(buttonSize),
-                shape = RoundedCornerShape(20.dp),
-
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-
-
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Icon(
-                    imageVector = action.icon,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    contentDescription = action.contentDescription
-                )
-            }
         }
     }
 }
@@ -360,19 +263,20 @@ private fun RemotePageIndicator(
 @Composable
 private fun RemoteControlDeck(
     isVoiceActive: Boolean,
-    isNumberPadVisible: Boolean,
-    primaryPadMode: RemotePadMode,
     rockerWidth: Dp,
     rockerHeight: Dp,
     controlSpacing: Dp,
     actionIconSize: Dp,
-    onSwitchPad: () -> Unit,
     onVoice: () -> Unit,
     onBack: () -> Unit,
     onVolumeDown: () -> Unit,
     onVolumeUp: () -> Unit,
     onChannelUp: () -> Unit,
     onChannelDown: () -> Unit,
+    onRewind: () -> Unit,
+    onPlayPause: () -> Unit,
+    onFastForward: () -> Unit,
+    onStop: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -386,10 +290,6 @@ private fun RemoteControlDeck(
             bottomIcon = Icons.Filled.Remove,
             height = rockerHeight,
             iconSize = actionIconSize,
-            containerColors = listOf(
-                MaterialTheme.colorScheme.secondaryContainer,
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onTopClick = onVolumeUp,
             onBottomClick = onVolumeDown
@@ -402,20 +302,39 @@ private fun RemoteControlDeck(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(controlSpacing)
             ) {
-                RemoteSwitcherBubble(
+                RemoteActionBubble(
                     modifier = Modifier.weight(1f),
-                    checked = isNumberPadVisible,
-                    primaryPadMode = primaryPadMode,
-                    onClick = onSwitchPad,
+                    icon = Icons.Filled.FastRewind,
+                    contentDescription = "Rewind",
+                    onClick = onRewind,
                     iconSize = actionIconSize
                 )
-                Spacer(modifier = Modifier.weight(2f))
+                RemoteActionBubble(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.PlayArrow,
+                    contentDescription = "Play/Pause",
+                    onClick = onPlayPause,
+                    iconSize = actionIconSize
+                )
+                RemoteActionBubble(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.FastForward,
+                    contentDescription = "Fast Forward",
+                    onClick = onFastForward,
+                    iconSize = actionIconSize
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(controlSpacing)
             ) {
-                Spacer(modifier = Modifier.weight(1f))
+                RemoteActionBubble(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.Stop,
+                    contentDescription = "Stop",
+                    onClick = onStop,
+                    iconSize = actionIconSize
+                )
                 RemoteActionBubble(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Mic,
@@ -440,10 +359,6 @@ private fun RemoteControlDeck(
             bottomIcon = Icons.Filled.KeyboardArrowDown,
             height = rockerHeight,
             iconSize = actionIconSize,
-            containerColors = listOf(
-                MaterialTheme.colorScheme.secondaryContainer,
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             onTopClick = onChannelUp,
             onBottomClick = onChannelDown
@@ -459,7 +374,6 @@ private fun RemoteVerticalRocker(
     bottomIcon: ImageVector,
     height: Dp,
     iconSize: Dp,
-    containerColors: List<Color>,
     contentColor: Color,
     onTopClick: () -> Unit,
     onBottomClick: () -> Unit,
@@ -470,8 +384,6 @@ private fun RemoteVerticalRocker(
             .clip(RoundedCornerShape(30.dp))
             .background(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
-//                Brush.verticalGradient(containerColors)
-
             )
             .border(
                 width = 1.dp,
@@ -558,110 +470,6 @@ private fun RemoteActionBubble(
     }
 }
 
-
-@Composable
-private fun RemoteSwitcherBubble(
-    modifier: Modifier = Modifier,
-    checked: Boolean,
-    primaryPadMode: RemotePadMode,
-    onClick: () -> Unit,
-    iconSize: Dp,
-) {
-    FilledTonalButton(
-        onClick = onClick,
-        modifier = modifier
-            .aspectRatio(1f),
-        shape = RoundedCornerShape(24.dp),
-        colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = if (checked) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            },
-            contentColor = if (checked) {
-                MaterialTheme.colorScheme.onSecondaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        ),
-        contentPadding = PaddingValues(0.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = if (checked) Icons.Filled.Apps else primaryPadMode.icon,
-                contentDescription = "Switch remote pad",
-                modifier = Modifier.size(iconSize)
-            )
-        }
-    }
-}
-
-@Composable
-private fun KeyboardDialog(
-    onDismiss: () -> Unit,
-    onInsertText: (String) -> Unit,
-    onBackspace: () -> Unit,
-    onEnter: () -> Unit,
-) {
-    var text by rememberSaveable { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("TV Keyboard") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = {
-                    val previous = text
-                    text = it
-                    when {
-                        it.length > previous.length && it.startsWith(previous) -> {
-                            onInsertText(it.removePrefix(previous))
-                        }
-                        it.length < previous.length && previous.startsWith(it) -> {
-                            repeat(previous.length - it.length) { onBackspace() }
-                        }
-                        else -> {
-                            val commonPrefix = previous.commonPrefixWith(it).length
-                            val removedCount = previous.length - commonPrefix
-                            repeat(removedCount.coerceAtLeast(0)) { onBackspace() }
-                            val inserted = it.substring(commonPrefix)
-                            if (inserted.isNotEmpty()) {
-                                onInsertText(inserted)
-                            }
-                        }
-                    }
-                },
-                placeholder = { Text("Type for your TV") },
-                minLines = 3,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        onEnter()
-                    }
-                )
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onEnter,
-                enabled = true
-            ) {
-                Text("Enter")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
-}
-
 @Composable
 private fun GoogleTvDPad(
     size: Dp,
@@ -706,7 +514,6 @@ private fun GoogleTvDPad(
                 modifier = Modifier.matchParentSize(),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 6.dp,
                 shadowElevation = 16.dp
             ) {
                 Box(
@@ -767,7 +574,7 @@ private fun GoogleTvDPad(
                         activeZone = activeZone,
                         icon = {
                             Icon(
-                                Icons.Filled.KeyboardArrowRight,
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = "Right"
                             )
                         },
@@ -803,7 +610,7 @@ private fun GoogleTvDPad(
                         zone = DPadZone.Left,
                         activeZone = activeZone,
                         icon = {
-                            Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = "Left")
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Left")
                         },
                         iconAlignment = Alignment.CenterStart,
                         iconOffsetX = sideOffset,
@@ -834,14 +641,12 @@ private fun GoogleTvDPad(
                     },
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
                 shadowElevation = 18.dp
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-//                            color = MaterialTheme.colorScheme.surfaceContainerHigh
                                     Brush.radialGradient(
                                 listOf(
                                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),

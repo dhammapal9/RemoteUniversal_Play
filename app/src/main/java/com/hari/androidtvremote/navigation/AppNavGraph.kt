@@ -223,9 +223,6 @@ fun AppNavGraph(
                 onTabSelected = { tab ->
                     currentTab = tab
                 },
-                onCyclePadMode = {
-                    activePadMode = activePadMode.toggleNumberPad(defaultPadMode)
-                },
                 onSetPadMode = { mode ->
                     activePadMode = mode
                 },
