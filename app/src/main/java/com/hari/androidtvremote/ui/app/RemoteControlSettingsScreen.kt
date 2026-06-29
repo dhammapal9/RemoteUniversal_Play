@@ -87,13 +87,11 @@ fun RemoteControlSettingsScreenPreview() {
         defaultPadMode = RemotePadMode.Touchpad,
         hapticsEnabled = true,
         keepScreenAwake = true,
-        remoteShelfMode = RemoteShelfMode.Applications,
         remoteApps = resolveRemoteShortcutApps(defaultRemoteShortcutOrder()),
         onBack = {},
         onDefaultPadModeChange = {},
         onHapticsChange = {},
         onKeepScreenAwakeChange = {},
-        onRemoteShelfModeChange = {},
         onRemoteAppOrderChange = {}
     )
 }
@@ -104,13 +102,11 @@ fun RemoteControlSettingsScreen(
     defaultPadMode: RemotePadMode,
     hapticsEnabled: Boolean,
     keepScreenAwake: Boolean,
-    remoteShelfMode: RemoteShelfMode,
     remoteApps: List<RemoteShortcutApp>,
     onBack: () -> Unit,
     onDefaultPadModeChange: (RemotePadMode) -> Unit,
     onHapticsChange: (Boolean) -> Unit,
     onKeepScreenAwakeChange: (Boolean) -> Unit,
-    onRemoteShelfModeChange: (RemoteShelfMode) -> Unit,
     onRemoteAppOrderChange: (List<String>) -> Unit,
 ) {
     var showAppOrderDialog by rememberSaveable { mutableStateOf(false) }
@@ -185,31 +181,12 @@ fun RemoteControlSettingsScreen(
                     )
                 }
                 item {
-                    SettingItemRow(
-                        title = "Top strip",
-                        desc = remoteShelfMode.description,
-                        icon = Icons.Filled.Apps,
-                    )
-                }
-                item {
-                    ThemeChipRow(
-                        options = RemoteShelfMode.entries,
-                        selected = remoteShelfMode,
-                        labelOf = { it.label },
-                        onSelect = onRemoteShelfModeChange
-                    )
-                }
-                item {
                     SettingSubtitle(text = "Manage Applications")
                 }
                 item {
                     SettingItemRow(
                         title = "Quick-launch order",
-                        desc = if (remoteShelfMode == RemoteShelfMode.Applications) {
-                            "Drag and arrange the app positions shown on the remote"
-                        } else {
-                            "Set the app order now for when you use the Applications strip"
-                        },
+                        desc = "Drag and arrange the app positions shown on the remote",
                         icon = Icons.Filled.Apps,
                         onClick = {
                             showAppOrderDialog = true
@@ -587,55 +564,6 @@ private fun DefaultPadModeSelector(
                         modifier = Modifier.padding(start = 10.dp)
                     )
                 }
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun <T> ThemeChipRow(
-    options: List<T>,
-    selected: T,
-    labelOf: (T) -> String,
-    onSelect: (T) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        options.forEach { option ->
-            val isSelected = option == selected
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceContainerHigh
-                    )
-                    .then(
-                        if (isSelected) Modifier.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(12.dp)
-                        ) else Modifier
-                    )
-                    .clickable { onSelect(option) }
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = labelOf(option),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
             }
         }
     }

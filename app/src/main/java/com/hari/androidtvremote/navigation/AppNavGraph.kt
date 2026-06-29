@@ -39,7 +39,6 @@ import com.hari.androidtvremote.ui.app.MediaKind
 import com.hari.androidtvremote.ui.app.OnboardingScreen
 import com.hari.androidtvremote.ui.app.RemotePadMode
 import com.hari.androidtvremote.ui.app.RemoteControlSettingsScreen
-import com.hari.androidtvremote.ui.app.RemoteShelfMode
 import com.hari.androidtvremote.ui.app.SettingsScreen
 import com.hari.androidtvremote.ui.app.SplashRoute
 import com.hari.androidtvremote.ui.app.TipsSupportScreen
@@ -122,17 +121,6 @@ fun AppNavGraph(
     var keepScreenAwake by rememberSaveable {
         mutableStateOf(prefs.getBoolean(Constant.PREF_KEEP_SCREEN_AWAKE, false))
     }
-    var remoteShelfMode by rememberSaveable {
-        mutableStateOf(
-            RemoteShelfMode.fromStorage(
-                prefs.getString(Constant.PREF_REMOTE_SHELF_MODE, null)
-            ) ?: if (prefs.getBoolean(Constant.PREF_SMART_SUGGESTIONS, true)) {
-                RemoteShelfMode.Applications
-            } else {
-                RemoteShelfMode.None
-            }
-        )
-    }
     var remoteAppOrder by rememberSaveable {
         mutableStateOf(
             decodeRemoteShortcutOrder(
@@ -151,15 +139,6 @@ fun AppNavGraph(
     }
     LaunchedEffect(keepScreenAwake) {
         prefs.edit { putBoolean(Constant.PREF_KEEP_SCREEN_AWAKE, keepScreenAwake) }
-    }
-    LaunchedEffect(remoteShelfMode) {
-        prefs.edit {
-            putString(Constant.PREF_REMOTE_SHELF_MODE, remoteShelfMode.storageValue)
-            putBoolean(
-                Constant.PREF_SMART_SUGGESTIONS,
-                remoteShelfMode == RemoteShelfMode.Applications
-            )
-        }
     }
     LaunchedEffect(remoteAppOrder) {
         prefs.edit {
@@ -240,7 +219,6 @@ fun AppNavGraph(
                 sessionState = sessionState,
                 hapticsEnabled = hapticsEnabled,
                 defaultPadMode = defaultPadMode,
-                remoteShelfMode = remoteShelfMode,
                 remoteApps = resolveRemoteShortcutApps(remoteAppOrder),
                 onTabSelected = { tab ->
                     currentTab = tab
@@ -311,7 +289,6 @@ fun AppNavGraph(
                 defaultPadMode = defaultPadMode,
                 hapticsEnabled = hapticsEnabled,
                 keepScreenAwake = keepScreenAwake,
-                remoteShelfMode = remoteShelfMode,
                 remoteApps = resolveRemoteShortcutApps(remoteAppOrder),
                 onBack = { navController.popBackStack() },
                 onDefaultPadModeChange = {
@@ -320,7 +297,6 @@ fun AppNavGraph(
                 },
                 onHapticsChange = { hapticsEnabled = it },
                 onKeepScreenAwakeChange = { keepScreenAwake = it },
-                onRemoteShelfModeChange = { remoteShelfMode = it },
                 onRemoteAppOrderChange = { newOrder ->
                     remoteAppOrder = newOrder
                 },

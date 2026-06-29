@@ -117,11 +117,8 @@ fun RemoteScreen(
     activePadMode: RemotePadMode,
     defaultPadMode: RemotePadMode,
     sessionState: TvRemoteUiState,
-    remoteShelfMode: RemoteShelfMode,
-    quickApps: List<RemoteShortcutApp>,
     onRequireConnection: () -> Unit,
     onCyclePadMode: () -> Unit,
-    onQuickApp: (String) -> Unit,
     onRemoteKey: (Remotemessage.RemoteKeyCode) -> Unit,
     onVolumeUp: () -> Unit,
     onVolumeDown: () -> Unit,
@@ -184,7 +181,6 @@ fun RemoteScreen(
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
     ) {
-        val hasTopStrip = remoteShelfMode != RemoteShelfMode.None
         val horizontalPadding = when {
             maxWidth < 360.dp -> 10.dp
             maxWidth < 420.dp -> 14.dp
@@ -222,7 +218,7 @@ fun RemoteScreen(
         }
         val padStageHeight = minOf(
             maxWidth - (horizontalPadding * 2),
-            if (hasTopStrip) maxHeight * 0.44f else maxHeight * 0.52f,
+            maxHeight * 0.44f,
             352.dp
         ).coerceAtLeast(300.dp)
 
@@ -233,20 +229,10 @@ fun RemoteScreen(
                 .padding(horizontal = horizontalPadding, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(verticalGap)
         ) {
-            when (remoteShelfMode) {
-                RemoteShelfMode.Applications -> AppShortcutStrip(
-                    quickApps = quickApps,
-                    onQuickApp = onQuickApp,
-                    shortcutSize = shelfButtonSize
-                )
-
-                RemoteShelfMode.MediaButtons -> MediaButtonStrip(
-                    actions = mediaActions,
-                    buttonSize = shelfButtonSize
-                )
-
-                RemoteShelfMode.None -> Unit
-            }
+            MediaButtonStrip(
+                actions = mediaActions,
+                buttonSize = shelfButtonSize
+            )
 
             Spacer(modifier = Modifier.height(15.dp))
             RemotePadStage(
@@ -294,54 +280,6 @@ fun RemoteScreen(
             onBackspace = { onKeyboardBackspace(1) },
             onEnter = onKeyboardEnter
         )
-    }
-}
-
-@Composable
-private fun AppShortcutStrip(
-    quickApps: List<RemoteShortcutApp>,
-    onQuickApp: (String) -> Unit,
-    shortcutSize: Dp,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        quickApps.forEach { app ->
-            Column(
-                modifier = Modifier.width(shortcutSize + 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(shortcutSize)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(app.accent, app.accentSecondary)
-                            )
-                        )
-                        .clickable { onQuickApp(app.launchName) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = app.mark,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
-                    )
-                }
-                Text(
-                    text = app.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
     }
 }
 

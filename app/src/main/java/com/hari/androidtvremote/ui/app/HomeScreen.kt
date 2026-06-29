@@ -22,14 +22,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cast
-import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.outlined.Cast
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,14 +74,18 @@ import kotlinx.coroutines.launch
 private val HomeTab.outlinedIcon: ImageVector
     get() = when (this) {
         HomeTab.Remote -> Icons.Outlined.Tv
+        HomeTab.Apps -> Icons.Outlined.GridView
         HomeTab.Cast -> Icons.Outlined.Cast
+        HomeTab.Discover -> Icons.Outlined.Search
         HomeTab.Settings -> Icons.Outlined.Settings
     }
 
 private val HomeTab.filledIcon: ImageVector
     get() = when (this) {
         HomeTab.Remote -> Icons.Filled.Tv
+        HomeTab.Apps -> Icons.Filled.GridView
         HomeTab.Cast -> Icons.Filled.Cast
+        HomeTab.Discover -> Icons.Filled.Search
         HomeTab.Settings -> Icons.Filled.Settings
     }
 
@@ -89,7 +97,6 @@ fun HomeScreen(
     defaultPadMode: RemotePadMode,
     sessionState: TvRemoteUiState,
     hapticsEnabled: Boolean,
-    remoteShelfMode: RemoteShelfMode,
     remoteApps: List<RemoteShortcutApp>,
     onTabSelected: (HomeTab) -> Unit,
     onCyclePadMode: () -> Unit,
@@ -164,20 +171,6 @@ fun HomeScreen(
                         ) {
                             Icon(Icons.Filled.PowerSettingsNew, contentDescription = "Power")
                         }
-                        IconButton(onClick = onOpenDiscovery) {
-                            Icon(
-                                imageVector = if (sessionState.connectedDevice != null) {
-                                    Icons.Filled.CastConnected
-                                } else {
-                                    Icons.Filled.Cast
-                                },
-                                contentDescription = if (sessionState.connectedDevice != null) {
-                                    "Connected device"
-                                } else {
-                                    "Discover"
-                                }
-                            )
-                        }
                     }
                 )
             },
@@ -209,10 +202,10 @@ fun HomeScreen(
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = {
-                                    if (tab == HomeTab.Settings) {
-                                        onOpenSettings()
-                                    } else {
-                                        onTabSelected(tab)
+                                    when (tab) {
+                                        HomeTab.Settings -> onOpenSettings()
+                                        HomeTab.Discover -> onOpenDiscovery()
+                                        else -> onTabSelected(tab)
                                     }
                                 },
                                 icon = {
@@ -249,11 +242,8 @@ fun HomeScreen(
                         activePadMode = activePadMode,
                         defaultPadMode = defaultPadMode,
                         sessionState = sessionState,
-                        remoteShelfMode = remoteShelfMode,
-                        quickApps = remoteApps,
                         onRequireConnection = onOpenDiscovery,
                         onCyclePadMode = onCyclePadMode,
-                        onQuickApp = { appName -> handleRemoteAction { onQuickApp(appName) } },
                         onRemoteKey = { key -> handleRemoteAction { onRemoteKey(key) } },
                         onVolumeUp = { handleRemoteAction(onVolumeUp) },
                         onVolumeDown = { handleRemoteAction(onVolumeDown) },
@@ -281,6 +271,12 @@ fun HomeScreen(
                         onToggleVoice = { handleRemoteAction(onToggleVoice) }
                     )
 
+                    HomeTab.Apps -> AppsScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        quickApps = remoteApps,
+                        onQuickApp = { appName -> handleRemoteAction { onQuickApp(appName) } }
+                    )
+
                     HomeTab.Cast -> CastScreen(
                         modifier = Modifier.padding(innerPadding),
                         isConnected = sessionState.connectedDevice != null,
@@ -297,7 +293,7 @@ fun HomeScreen(
                         }
                     )
 
-                    HomeTab.Settings -> {
+                    HomeTab.Discover, HomeTab.Settings -> {
                         Box(Modifier.fillMaxSize())
                     }
                 }
