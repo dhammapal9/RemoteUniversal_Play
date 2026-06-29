@@ -137,19 +137,6 @@ fun RemoteControlSettingsScreen(
                     .padding(innerPadding),
             ) {
                 item {
-                    SettingSubtitle(text = "Remote Layout")
-                }
-                item {
-                    DefaultPadModeSelector(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 8.dp),
-                        defaultPadMode = defaultPadMode.primaryMode(),
-                        onDefaultPadModeChange = onDefaultPadModeChange
-                    )
-                }
-
-                item {
                     SettingSubtitle(text = "Remote Controls")
                 }
                 item {

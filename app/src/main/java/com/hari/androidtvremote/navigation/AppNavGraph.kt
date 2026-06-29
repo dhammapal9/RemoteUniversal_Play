@@ -226,6 +226,9 @@ fun AppNavGraph(
                 onCyclePadMode = {
                     activePadMode = activePadMode.toggleNumberPad(defaultPadMode)
                 },
+                onSetPadMode = { mode ->
+                    activePadMode = mode
+                },
                 onOpenDiscovery = {
                     navController.navigate(Screen.Discovery.route)
                 },

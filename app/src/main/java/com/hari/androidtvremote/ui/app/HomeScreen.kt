@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,9 +23,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeMute
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -36,6 +41,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -50,8 +56,16 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -59,8 +73,12 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hari.androidtvremote.BuildConfig
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -68,6 +86,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.hari.androidtvremote.androidLib.remote.Remotemessage
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.ImeAction
 import kotlinx.coroutines.launch
 
 // Outline icons for unselected state — ReadYou uses outlined/filled toggle
@@ -100,6 +122,7 @@ fun HomeScreen(
     remoteApps: List<RemoteShortcutApp>,
     onTabSelected: (HomeTab) -> Unit,
     onCyclePadMode: () -> Unit,
+    onSetPadMode: (RemotePadMode) -> Unit = {},
     onOpenDiscovery: () -> Unit,
     onOpenSettings: () -> Unit,
     onPower: () -> Unit,
@@ -120,6 +143,7 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
+    var showKeyboardDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(sessionState.statusMessage, sessionState.isError) {
         val message = sessionState.statusMessage ?: return@LaunchedEffect
@@ -152,20 +176,73 @@ fun HomeScreen(
             contentWindowInsets = WindowInsets.safeDrawing,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                TopAppBar(
+                CenterAlignedTopAppBar(
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     ),
+                    navigationIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { handleRemoteAction { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) } }
+                            ) {
+                                Icon(Icons.Filled.Home, contentDescription = "Home")
+                            }
+                            IconButton(
+                                onClick = { handleRemoteAction { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_MUTE) } }
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = "Mute")
+                            }
+                        }
+                    },
                     title = {
-                        Column {
-                            Text(
-                                text = sessionState.connectedDevice?.name ?: "Android TV Remote",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
+                        if (currentTab == HomeTab.Remote) {
+                            Surface(
+                                shape = RoundedCornerShape(24.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    RemotePadMode.entries.forEach { mode ->
+                                        val isSelected = activePadMode == mode
+                                        val bgColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+                                        val iconColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(bgColor)
+                                                .clickable { handleAction { onSetPadMode(mode) } },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = mode.icon,
+                                                contentDescription = mode.label,
+                                                tint = iconColor,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                     actions = {
+                        IconButton(
+                            onClick = {
+                                if (sessionState.connectedDevice != null) {
+                                    showKeyboardDialog = true
+                                } else {
+                                    onOpenDiscovery()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Filled.Keyboard, contentDescription = "Keyboard")
+                        }
                         IconButton(
                             onClick = { handleRemoteAction(onPower) }
                         ) {
@@ -247,27 +324,6 @@ fun HomeScreen(
                         onRemoteKey = { key -> handleRemoteAction { onRemoteKey(key) } },
                         onVolumeUp = { handleRemoteAction(onVolumeUp) },
                         onVolumeDown = { handleRemoteAction(onVolumeDown) },
-                        onKeyboardText = { text ->
-                            if (sessionState.connectedDevice != null) {
-                                onKeyboardText(text)
-                            } else {
-                                onOpenDiscovery()
-                            }
-                        },
-                        onKeyboardBackspace = { count ->
-                            if (sessionState.connectedDevice != null) {
-                                onKeyboardBackspace(count)
-                            } else {
-                                onOpenDiscovery()
-                            }
-                        },
-                        onKeyboardEnter = {
-                            if (sessionState.connectedDevice != null) {
-                                onKeyboardEnter()
-                            } else {
-                                onOpenDiscovery()
-                            }
-                        },
                         onToggleVoice = { handleRemoteAction(onToggleVoice) }
                     )
 
@@ -378,4 +434,66 @@ fun HomeScreen(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     }
+
+    if (showKeyboardDialog) {
+        KeyboardDialog(
+            onDismiss = { showKeyboardDialog = false },
+            onInsertText = onKeyboardText,
+            onBackspace = { onKeyboardBackspace(1) },
+            onEnter = onKeyboardEnter
+        )
+    }
+}
+
+@Composable
+private fun KeyboardDialog(
+    onDismiss: () -> Unit,
+    onInsertText: (String) -> Unit,
+    onBackspace: () -> Unit,
+    onEnter: () -> Unit,
+) {
+    var textValue by rememberSaveable { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("TV Keyboard") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = textValue,
+                    onValueChange = { newValue: String ->
+                        val previous = textValue
+                        textValue = newValue
+                        if (newValue.length > previous.length && newValue.startsWith(previous)) {
+                            onInsertText(newValue.removePrefix(previous))
+                        } else if (newValue.length < previous.length && previous.startsWith(newValue)) {
+                            repeat(previous.length - newValue.length) { onBackspace() }
+                        } else {
+                            val commonPrefix = previous.commonPrefixWith(newValue).length
+                            val removedCount = previous.length - commonPrefix
+                            repeat(removedCount.coerceAtLeast(0)) { onBackspace() }
+                            val inserted = newValue.substring(commonPrefix)
+                            if (inserted.isNotEmpty()) {
+                                onInsertText(inserted)
+                            }
+                        }
+                    },
+                    placeholder = { Text("Type for your TV") },
+                    minLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onEnter() })
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onEnter) {
+                Text("Enter")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }

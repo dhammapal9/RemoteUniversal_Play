@@ -122,9 +122,6 @@ fun RemoteScreen(
     onRemoteKey: (Remotemessage.RemoteKeyCode) -> Unit,
     onVolumeUp: () -> Unit,
     onVolumeDown: () -> Unit,
-    onKeyboardText: (String) -> Unit,
-    onKeyboardBackspace: (Int) -> Unit,
-    onKeyboardEnter: () -> Unit,
     onToggleVoice: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -140,7 +137,6 @@ fun RemoteScreen(
         hasMicPermission = granted
         if (granted) onToggleVoice()
     }
-
     val isConnected = sessionState.connectedDevice != null
     val mediaActions = remember(onRemoteKey) {
         listOf(
@@ -166,17 +162,8 @@ fun RemoteScreen(
             )
         )
     }
-    var showKeyboardDialog by rememberSaveable { mutableStateOf(false) }
     val primaryPadMode = defaultPadMode.primaryMode()
     val isNumberPadVisible = activePadMode == RemotePadMode.NumberPad
-
-    fun handleKeyboardOpen() {
-        if (isConnected) {
-            showKeyboardDialog = true
-        } else {
-            onRequireConnection()
-        }
-    }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
@@ -253,10 +240,7 @@ fun RemoteScreen(
                 rockerHeight = rockerHeight,
                 controlSpacing = controlSpacing,
                 actionIconSize = actionIconSize,
-                onKeyboard = ::handleKeyboardOpen,
-                onHome = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) },
                 onSwitchPad = onCyclePadMode,
-                onMute = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_MUTE) },
                 onVoice = {
                     if (hasMicPermission) {
                         onToggleVoice()
@@ -271,15 +255,6 @@ fun RemoteScreen(
                 onChannelDown = { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_CHANNEL_DOWN) }
             )
         }
-    }
-
-    if (showKeyboardDialog) {
-        KeyboardDialog(
-            onDismiss = { showKeyboardDialog = false },
-            onInsertText = onKeyboardText,
-            onBackspace = { onKeyboardBackspace(1) },
-            onEnter = onKeyboardEnter
-        )
     }
 }
 
@@ -391,10 +366,7 @@ private fun RemoteControlDeck(
     rockerHeight: Dp,
     controlSpacing: Dp,
     actionIconSize: Dp,
-    onKeyboard: () -> Unit,
-    onHome: () -> Unit,
     onSwitchPad: () -> Unit,
-    onMute: () -> Unit,
     onVoice: () -> Unit,
     onBack: () -> Unit,
     onVolumeDown: () -> Unit,
@@ -430,20 +402,6 @@ private fun RemoteControlDeck(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(controlSpacing)
             ) {
-                RemoteActionBubble(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Keyboard,
-                    contentDescription = "Keyboard",
-                    onClick = onKeyboard,
-                    iconSize = actionIconSize
-                )
-                RemoteActionBubble(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Home,
-                    contentDescription = "Home",
-                    onClick = onHome,
-                    iconSize = actionIconSize
-                )
                 RemoteSwitcherBubble(
                     modifier = Modifier.weight(1f),
                     checked = isNumberPadVisible,
@@ -451,18 +409,13 @@ private fun RemoteControlDeck(
                     onClick = onSwitchPad,
                     iconSize = actionIconSize
                 )
+                Spacer(modifier = Modifier.weight(2f))
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(controlSpacing)
             ) {
-                RemoteActionBubble(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.AutoMirrored.Filled.VolumeMute,
-                    contentDescription = "Mute",
-                    onClick = onMute,
-                    iconSize = actionIconSize
-                )
+                Spacer(modifier = Modifier.weight(1f))
                 RemoteActionBubble(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Mic,
@@ -642,18 +595,6 @@ private fun RemoteSwitcherBubble(
                 imageVector = if (checked) Icons.Filled.Apps else primaryPadMode.icon,
                 contentDescription = "Switch remote pad",
                 modifier = Modifier.size(iconSize)
-            )
-            Text(
-                text = if (checked) {
-                    "123"
-                } else if (primaryPadMode == RemotePadMode.Touchpad) {
-                    "Touch"
-                } else {
-                    "D-pad"
-                },
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-                maxLines = 1
             )
         }
     }
