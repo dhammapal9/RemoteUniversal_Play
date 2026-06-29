@@ -20,11 +20,22 @@ import com.hari.androidtvremote.ui.theme.palette.getSystemTonalPalettes
 import com.hari.androidtvremote.ui.theme.palette.toTonalPalettes
 
 object PresetColor {
-
     val blue = Color(0xFF80BBFF)
+    val purple = Color(0xFF62539F)
     val pink = Color(0xFFFFD8E4)
-    val purple = Color(0xFF62539f)
     val yellow = Color(0xFFE9B666)
+    val green = Color(0xFF0F9D58)
+    val red = Color(0xFFDB4437)
+    val indigo = Color(0xFF5C6BC0)
+    val teal = Color(0xFF26A69A)
+    val deepPurple = Color(0xFF673AB7)
+    val orange = Color(0xFFFF9800)
+    val brown = Color(0xFF795548)
+    val blueGrey = Color(0xFF607D8B)
+    val pink2 = Color(0xFFE91E63)
+    val cyan = Color(0xFF00BCD4)
+    val lime = Color(0xFFCDDC39)
+    val yellow2 = Color(0xFFFFEB3B)
 }
 
 @Composable
@@ -34,9 +45,21 @@ fun extractTonalPalettesFromUserWallpaper(): List<TonalPalettes> {
 
     val preset = mutableListOf(
         PresetColor.blue.toTonalPalettes(),
-        PresetColor.pink.toTonalPalettes(),
         PresetColor.purple.toTonalPalettes(),
-        PresetColor.yellow.toTonalPalettes()
+        PresetColor.pink.toTonalPalettes(),
+        PresetColor.yellow.toTonalPalettes(),
+        PresetColor.green.toTonalPalettes(),
+        PresetColor.red.toTonalPalettes(),
+        PresetColor.indigo.toTonalPalettes(),
+        PresetColor.teal.toTonalPalettes(),
+        PresetColor.deepPurple.toTonalPalettes(),
+        PresetColor.orange.toTonalPalettes(),
+        PresetColor.brown.toTonalPalettes(),
+        PresetColor.blueGrey.toTonalPalettes(),
+        PresetColor.pink2.toTonalPalettes(),
+        PresetColor.cyan.toTonalPalettes(),
+        PresetColor.lime.toTonalPalettes(),
+        PresetColor.yellow2.toTonalPalettes(),
     )
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !LocalView.current.isInEditMode) {

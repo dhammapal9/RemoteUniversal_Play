@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -84,11 +85,15 @@ fun AppearanceScreen(
             Color(0xFFDB4437), // Red
             Color(0xFF5C6BC0), // Indigo
             Color(0xFF26A69A), // Teal
+            Color(0xFF673AB7), // Deep Purple
+            Color(0xFFFF9800), // Orange
+            Color(0xFF795548), // Brown
+            Color(0xFF607D8B), // Blue Grey
+            Color(0xFFE91E63), // Pink 2
+            Color(0xFF00BCD4), // Cyan
+            Color(0xFFCDDC39), // Lime
+            Color(0xFFFFEB3B), // Yellow 2
         )
-    }
-    val basicPalettes = ArrayList<TonalPalettes>(basicColors.size)
-    for (color in basicColors) {
-        basicPalettes.add(color.toTonalPalettes())
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -156,12 +161,12 @@ fun AppearanceScreen(
                                     .fillMaxWidth()
                                     .horizontalScroll(rememberScrollState())
                                     .padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                basicPalettes.forEachIndexed { index: Int, palette: TonalPalettes ->
-                                    PaletteChip(
+                                basicColors.forEachIndexed { index: Int, color: Color ->
+                                    ColorDot(
                                         selected = themeIndex == index,
-                                        palette = palette,
+                                        color = color,
                                         onClick = { updateThemeIndex(index) }
                                     )
                                 }
@@ -175,52 +180,38 @@ fun AppearanceScreen(
 }
 
 @Composable
-private fun PaletteChip(
+private fun ColorDot(
     selected: Boolean,
-    palette: TonalPalettes,
+    color: Color,
     onClick: () -> Unit,
 ) {
-    Surface(
+    Box(
         modifier = Modifier
-            .size(68.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = 0.2f))
+            .border(
+                width = if (selected) 2.dp else 0.dp,
+                color = if (selected) color else Color.Transparent,
+                shape = CircleShape
+            )
             .clickable(onClick = onClick),
-        color = palette primary 90,
-        shape = RoundedCornerShape(20.dp),
-        border = if (selected) {
-            androidx.compose.foundation.BorderStroke(2.dp, palette primary 40)
-        } else null
+        contentAlignment = Alignment.Center
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Box(modifier = Modifier.fillMaxSize().weight(1f).background(palette secondary 60))
-                    Box(modifier = Modifier.fillMaxSize().weight(1f).background(palette tertiary 60))
-                }
-                Box(modifier = Modifier.fillMaxWidth().weight(1f).background(palette primary 80))
-            }
-
+        Surface(
+            modifier = Modifier.size(32.dp),
+            shape = CircleShape,
+            color = color,
+            shadowElevation = if (selected) 4.dp else 0.dp
+        ) {
             if (selected) {
-                Surface(
-                    shape = CircleShape,
-                    color = palette primary 40,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Outlined.Check,
-                            contentDescription = "Selected",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Check,
+                        contentDescription = "Selected",
+                        tint = if (color.luminance() > 0.5f) Color.Black else Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
