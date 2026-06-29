@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -86,6 +87,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.hari.androidtvremote.androidLib.remote.Remotemessage
+import com.hari.androidtvremote.ui.theme.AccentBorderBrush
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -201,7 +203,13 @@ fun HomeScreen(
                             Surface(
                                 shape = RoundedCornerShape(28.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                                modifier = Modifier.padding(vertical = 4.dp)
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp)
+                                    .border(
+                                        width = 0.5.dp,
+                                        brush = AccentBorderBrush,
+                                        shape = RoundedCornerShape(28.dp)
+                                    )
                             ) {
                                 Row(
                                     modifier = Modifier.padding(4.dp),
