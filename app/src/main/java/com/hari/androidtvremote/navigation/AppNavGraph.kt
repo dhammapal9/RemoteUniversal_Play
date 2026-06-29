@@ -104,12 +104,17 @@ fun AppNavGraph(
 
     var currentTab by rememberSaveable { mutableStateOf(HomeTab.Remote) }
     var defaultPadMode by rememberSaveable {
-        mutableStateOf(
-            prefs.getString(Constant.PREF_DEFAULT_PAD_MODE, RemotePadMode.Touchpad.name)
-                ?.let { value -> RemotePadMode.entries.firstOrNull { it.name == value } }
+        // We want to transition everyone to DPad as the default.
+        // If they had the old default (Touchpad) and haven't manually changed it, we move them to DPad.
+        val saved = prefs.getString(Constant.PREF_DEFAULT_PAD_MODE, null)
+        val initial = if (saved == null || saved == "Touchpad") {
+            RemotePadMode.DPad
+        } else {
+            RemotePadMode.entries.firstOrNull { it.name == saved }
                 ?.takeIf { it != RemotePadMode.NumberPad }
-                ?: RemotePadMode.Touchpad
-        )
+                ?: RemotePadMode.DPad
+        }
+        mutableStateOf(initial)
     }
     var activePadMode by rememberSaveable { mutableStateOf(defaultPadMode) }
     var autoReconnectEnabled by rememberSaveable {

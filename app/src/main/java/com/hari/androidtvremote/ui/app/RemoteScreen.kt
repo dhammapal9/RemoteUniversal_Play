@@ -181,7 +181,7 @@ fun RemoteScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = horizontalPadding, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(verticalGap)
+            verticalArrangement = Arrangement.spacedBy(verticalGap, Alignment.CenterVertically)
         ) {
             RemotePadStage(
                 activePadMode = activePadMode,

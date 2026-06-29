@@ -183,27 +183,29 @@ fun HomeScreen(
                     navigationIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
+                                modifier = Modifier.size(48.dp),
                                 onClick = { handleRemoteAction { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) } }
                             ) {
-                                Icon(Icons.Filled.Home, contentDescription = "Home")
+                                Icon(Icons.Filled.Home, contentDescription = "Home", modifier = Modifier.size(28.dp))
                             }
                             IconButton(
+                                modifier = Modifier.size(48.dp),
                                 onClick = { handleRemoteAction { onRemoteKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_MUTE) } }
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = "Mute")
+                                Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = "Mute", modifier = Modifier.size(28.dp))
                             }
                         }
                     },
                     title = {
                         if (currentTab == HomeTab.Remote) {
                             Surface(
-                                shape = RoundedCornerShape(24.dp),
+                                shape = RoundedCornerShape(28.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
                                 modifier = Modifier.padding(vertical = 4.dp)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     RemotePadMode.entries.forEach { mode ->
                                         val isSelected = activePadMode == mode
@@ -212,7 +214,7 @@ fun HomeScreen(
 
                                         Box(
                                             modifier = Modifier
-                                                .size(36.dp)
+                                                .size(44.dp)
                                                 .clip(CircleShape)
                                                 .background(bgColor)
                                                 .clickable { handleAction { onSetPadMode(mode) } },
@@ -222,7 +224,7 @@ fun HomeScreen(
                                                 imageVector = mode.icon,
                                                 contentDescription = mode.label,
                                                 tint = iconColor,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(24.dp)
                                             )
                                         }
                                     }
@@ -232,6 +234,7 @@ fun HomeScreen(
                     },
                     actions = {
                         IconButton(
+                            modifier = Modifier.size(48.dp),
                             onClick = {
                                 if (sessionState.connectedDevice != null) {
                                     showKeyboardDialog = true
@@ -240,12 +243,13 @@ fun HomeScreen(
                                 }
                             }
                         ) {
-                            Icon(Icons.Filled.Keyboard, contentDescription = "Keyboard")
+                            Icon(Icons.Filled.Keyboard, contentDescription = "Keyboard", modifier = Modifier.size(28.dp))
                         }
                         IconButton(
+                            modifier = Modifier.size(48.dp),
                             onClick = { handleRemoteAction(onPower) }
                         ) {
-                            Icon(Icons.Filled.PowerSettingsNew, contentDescription = "Power")
+                            Icon(Icons.Filled.PowerSettingsNew, contentDescription = "Power", modifier = Modifier.size(28.dp))
                         }
                     }
                 )

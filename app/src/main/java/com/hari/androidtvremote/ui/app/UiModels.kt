@@ -82,7 +82,7 @@ fun RemotePadMode.next(): RemotePadMode {
 }
 
 fun RemotePadMode.primaryMode(): RemotePadMode = when (this) {
-    RemotePadMode.NumberPad -> RemotePadMode.Touchpad
+    RemotePadMode.NumberPad -> RemotePadMode.DPad
     else -> this
 }
 

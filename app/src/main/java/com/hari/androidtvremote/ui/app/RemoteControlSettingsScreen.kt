@@ -84,7 +84,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun RemoteControlSettingsScreenPreview() {
     RemoteControlSettingsScreen(
-        defaultPadMode = RemotePadMode.Touchpad,
+        defaultPadMode = RemotePadMode.DPad,
         hapticsEnabled = true,
         keepScreenAwake = true,
         remoteApps = resolveRemoteShortcutApps(defaultRemoteShortcutOrder()),
@@ -507,7 +507,7 @@ private fun DefaultPadModeSelector(
     onDefaultPadModeChange: (RemotePadMode) -> Unit
 ) {
     val layoutModes = remember {
-        listOf(RemotePadMode.Touchpad, RemotePadMode.DPad)
+        listOf(RemotePadMode.DPad, RemotePadMode.Touchpad)
     }
 
     Row(
