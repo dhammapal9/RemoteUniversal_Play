@@ -82,10 +82,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import com.hari.androidtvremote.androidLib.remote.Remotemessage
+import com.hari.androidtvremote.ui.theme.AccentBlue
 import com.hari.androidtvremote.ui.theme.AccentBorderBrush
 import com.hari.androidtvremote.ui.theme.AccentBorderSoftBrush
+import com.hari.androidtvremote.ui.theme.AccentCoral
+import com.hari.androidtvremote.ui.theme.AccentMagenta
+import com.hari.androidtvremote.ui.theme.AccentPinkRed
 import com.hari.androidtvremote.ui.theme.AccentRingBrush
 import com.hari.androidtvremote.ui.theme.OkButtonBrush
+import androidx.compose.ui.graphics.StrokeCap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -492,7 +497,6 @@ private fun GoogleTvDPad(
         animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
         label = "dpadScale"
     )
-    val separatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
     val edgeOffset = if (size < 260.dp) 20.dp else 28.dp
     val sideOffset = if (size < 260.dp) 18.dp else 26.dp
     val edgeBubbleSize = if (size < 260.dp) 30.dp else 34.dp
@@ -541,9 +545,15 @@ private fun GoogleTvDPad(
                         )
                 ) {
                     Canvas(modifier = Modifier.matchParentSize()) {
-                        val outerRadius = size.value / 2f
-                        val innerRadius = outerRadius * 0.40f
-                        listOf(45f, 135f, 225f, 315f).forEach { angle ->
+                        val outerRadius = this.size.minDimension / 2f
+                        val innerRadius = outerRadius * 0.41f
+                        val separators = listOf(
+                            45f to AccentMagenta,
+                            135f to AccentCoral,
+                            225f to AccentPinkRed,
+                            315f to AccentBlue,
+                        )
+                        separators.forEach { (angle, color) ->
                             val radians = Math.toRadians(angle.toDouble()).toFloat()
                             val start = Offset(
                                 x = center.x + cos(radians) * innerRadius,
@@ -554,10 +564,11 @@ private fun GoogleTvDPad(
                                 y = center.y + sin(radians) * outerRadius
                             )
                             drawLine(
-                                color = separatorColor,
+                                color = color,
                                 start = start,
                                 end = end,
-                                strokeWidth = 3f
+                                strokeWidth = 0.5f,
+                                cap = StrokeCap.Round
                             )
                         }
                     }
