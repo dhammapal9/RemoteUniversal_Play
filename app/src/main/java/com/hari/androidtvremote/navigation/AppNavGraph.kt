@@ -289,15 +289,10 @@ fun AppNavGraph(
         }
         composable(Screen.RemoteControls.route) {
             RemoteControlSettingsScreen(
-                defaultPadMode = defaultPadMode,
                 hapticsEnabled = hapticsEnabled,
                 keepScreenAwake = keepScreenAwake,
                 remoteApps = resolveRemoteShortcutApps(remoteAppOrder),
                 onBack = { navController.popBackStack() },
-                onDefaultPadModeChange = {
-                    defaultPadMode = it
-                    activePadMode = it
-                },
                 onHapticsChange = { hapticsEnabled = it },
                 onKeepScreenAwakeChange = { keepScreenAwake = it },
                 onRemoteAppOrderChange = { newOrder ->

@@ -87,12 +87,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun RemoteControlSettingsScreenPreview() {
     RemoteControlSettingsScreen(
-        defaultPadMode = RemotePadMode.DPad,
         hapticsEnabled = true,
         keepScreenAwake = true,
         remoteApps = resolveRemoteShortcutApps(defaultRemoteShortcutOrder()),
         onBack = {},
-        onDefaultPadModeChange = {},
         onHapticsChange = {},
         onKeepScreenAwakeChange = {},
         onRemoteAppOrderChange = {}
@@ -102,19 +100,17 @@ fun RemoteControlSettingsScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlSettingsScreen(
-    defaultPadMode: RemotePadMode,
     hapticsEnabled: Boolean,
     keepScreenAwake: Boolean,
     remoteApps: List<RemoteShortcutApp>,
     onBack: () -> Unit,
-    onDefaultPadModeChange: (RemotePadMode) -> Unit,
     onHapticsChange: (Boolean) -> Unit,
     onKeepScreenAwakeChange: (Boolean) -> Unit,
     onRemoteAppOrderChange: (List<String>) -> Unit,
 ) {
     var showAppOrderDialog by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
         rememberTopAppBarState()
     )
 
@@ -140,23 +136,6 @@ fun RemoteControlSettingsScreen(
                     .padding(innerPadding),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                item {
-                    SettingsSection(title = "Default Layout") {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Choose which control panel opens when the app starts.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            DefaultPadModeSelector(
-                                defaultPadMode = defaultPadMode,
-                                onDefaultPadModeChange = onDefaultPadModeChange
-                            )
-                        }
-                    }
-                }
-
                 item {
                     SettingsSection(title = "Interaction") {
                         SettingsSwitchItem(
@@ -550,78 +529,5 @@ private fun DraggableAppItem(
 }
 
 
-@Composable
-private fun DefaultPadModeSelector(
-    modifier: Modifier = Modifier,
-    defaultPadMode: RemotePadMode,
-    onDefaultPadModeChange: (RemotePadMode) -> Unit
-) {
-    val layoutModes = remember {
-        listOf(RemotePadMode.DPad, RemotePadMode.Touchpad)
-    }
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        layoutModes.forEach { mode ->
-            val isSelected = defaultPadMode == mode
-            Surface(
-                onClick = { onDefaultPadModeChange(mode) },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                },
-                border = if (isSelected) {
-                    BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                } else null
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerHighest
-                        },
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (mode == RemotePadMode.Touchpad) {
-                                    Icons.Filled.TouchApp
-                                } else {
-                                    Icons.Filled.GridView
-                                },
-                                contentDescription = null,
-                                tint = if (isSelected) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = mode.label,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Drag state holder
