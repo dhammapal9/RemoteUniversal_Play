@@ -164,7 +164,52 @@ public class AndroidRemoteTv extends BaseAndroidRemoteTv {
 
     public void sendAppLink(String appLink) {
         Log.i("AndroidRemoteTv", "appLink : " + appLink);
-        mRemoteSession.sendAppCommand(appLink);
+        try {
+            if (mRemoteSession != null) {
+                mRemoteSession.sendAppCommand(appLink);
+            }
+        } catch (Throwable t) {
+            // Never let a failed app-link bubble up — the user expects the
+            // app to remain usable even if the TV can't handle the URL.
+            Log.w("AndroidRemoteTv", "sendAppLink ignored failure: " + t.getMessage());
+        }
+    }
+
+    /**
+     * Whether the underlying remote socket is currently alive. The UI uses
+     * this after launching an app to decide whether to silently rebuild the
+     * connection — when the TV doesn't have the requested app installed,
+     * it tends to close the remote session as a side-effect.
+     */
+    public boolean isRemoteSocketAlive() {
+        return mRemoteSession != null && mRemoteSession.isSocketAlive();
+    }
+
+    /**
+     * Silently rebuild the remote socket — no listener notifications, no UI
+     * disconnect/reconnect cascade. Used after a quick-launch click so that
+     * even if the TV closed the session because it didn't recognize the app
+     * URL (e.g. Plex / Peacock not installed), the user's volume and remote
+     * keys keep working as if nothing happened.
+     */
+    public void silentReconnect(String host)
+            throws GeneralSecurityException, IOException, InterruptedException, PairingException {
+        // Tear down whatever dead session is hanging on (its reader thread
+        // will exit on EOF; that path is already silent).
+        RemoteSession previous = mRemoteSession;
+        if (previous != null) {
+            try { previous.abort(); } catch (Throwable ignored) {}
+        }
+        mRemoteSession = new RemoteSession(host, 6466, new RemoteSession.RemoteSessionListener() {
+            @Override public void onConnected() { /* silent */ }
+            @Override public void onSslError() { /* silent */ }
+            @Override public void onDisconnected() { /* silent */ }
+            @Override public void onImeShow(String text, int fieldCounter) {
+                notifyOnImeShow(text, fieldCounter);
+            }
+            @Override public void onError(String message) { /* silent */ }
+        });
+        mRemoteSession.connect();
     }
 
     public void sendMessage(Remotemessage.RemoteMessage message) {
@@ -197,33 +242,33 @@ public class AndroidRemoteTv extends BaseAndroidRemoteTv {
 
     public void reconnect(String host, AndroidTvListener androidTvListener)
             throws GeneralSecurityException, IOException, InterruptedException, PairingException {
+        if (androidTvListener != null) {
+            addListener(androidTvListener);
+        }
         mRemoteSession = new RemoteSession(host, 6466, new RemoteSession.RemoteSessionListener() {
             @Override
             public void onConnected() {
-                androidTvListener.onConnected();
+                notifyOnConnected();
             }
 
             @Override
             public void onSslError() {
-
+                notifyOnError("SSL error");
             }
 
             @Override
             public void onDisconnected() {
-
+                notifyOnDisconnected();
             }
 
             @Override
             public void onImeShow(String text, int fieldCounter) {
                 notifyOnImeShow(text, fieldCounter);
-                if (androidTvListener != null) {
-                    androidTvListener.onImeShow(text, fieldCounter);
-                }
             }
 
             @Override
             public void onError(String message) {
-
+                notifyOnError(message);
             }
 
         });

@@ -37,7 +37,10 @@ data class RemoteShortcutApp(
     val mark: String,
     val iconUrl: String? = null,
     val accent: Color,
-    val accentSecondary: Color = accent
+    val accentSecondary: Color = accent,
+    // DIAL "App Name" — used to probe whether this app is actually installed on the
+    // TV via the DIAL HTTP endpoint. Null means we can't probe; show as-is.
+    val dialName: String? = null
 )
 
 private fun favicon(domain: String): String =
@@ -51,7 +54,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "YT",
         iconUrl = favicon("youtube.com"),
         accent = Color(0xFFFF2D20),
-        accentSecondary = Color(0xFFFF7A66)
+        accentSecondary = Color(0xFFFF7A66),
+        dialName = "YouTube"
     ),
     RemoteShortcutApp(
         id = "prime_video",
@@ -60,7 +64,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "PV",
         iconUrl = favicon("primevideo.com"),
         accent = Color(0xFF1E88FF),
-        accentSecondary = Color(0xFF00B8D9)
+        accentSecondary = Color(0xFF00B8D9),
+        dialName = "Amazon"
     ),
     RemoteShortcutApp(
         id = "netflix",
@@ -69,7 +74,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "N",
         iconUrl = favicon("netflix.com"),
         accent = Color(0xFFD61F2C),
-        accentSecondary = Color(0xFF5B0D18)
+        accentSecondary = Color(0xFF5B0D18),
+        dialName = "Netflix"
     ),
     RemoteShortcutApp(
         id = "disney_plus",
@@ -78,7 +84,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "D+",
         iconUrl = favicon("disneyplus.com"),
         accent = Color(0xFF001E7E),
-        accentSecondary = Color(0xFF0072D2)
+        accentSecondary = Color(0xFF0072D2),
+        dialName = "DisneyPlus"
     ),
     RemoteShortcutApp(
         id = "spotify",
@@ -87,7 +94,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "S",
         iconUrl = favicon("spotify.com"),
         accent = Color(0xFF1DB954),
-        accentSecondary = Color(0xFF191414)
+        accentSecondary = Color(0xFF191414),
+        dialName = "Spotify"
     ),
     RemoteShortcutApp(
         id = "youtube_music",
@@ -96,7 +104,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "YM",
         iconUrl = favicon("music.youtube.com"),
         accent = Color(0xFFFF0033),
-        accentSecondary = Color(0xFF990022)
+        accentSecondary = Color(0xFF990022),
+        dialName = "YouTubeMusic"
     ),
     RemoteShortcutApp(
         id = "twitch",
@@ -105,7 +114,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "T",
         iconUrl = favicon("twitch.tv"),
         accent = Color(0xFF9146FF),
-        accentSecondary = Color(0xFF6441A5)
+        accentSecondary = Color(0xFF6441A5),
+        dialName = "Twitch"
     ),
     RemoteShortcutApp(
         id = "plex",
@@ -114,7 +124,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "P",
         iconUrl = favicon("plex.tv"),
         accent = Color(0xFFE5A00D),
-        accentSecondary = Color(0xFF282A2D)
+        accentSecondary = Color(0xFF282A2D),
+        dialName = "Plex"
     ),
     RemoteShortcutApp(
         id = "crunchyroll",
@@ -123,7 +134,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "C",
         iconUrl = favicon("crunchyroll.com"),
         accent = Color(0xFFF47521),
-        accentSecondary = Color(0xFF232527)
+        accentSecondary = Color(0xFF232527),
+        dialName = "Crunchyroll"
     ),
     RemoteShortcutApp(
         id = "hulu",
@@ -132,7 +144,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "HU",
         iconUrl = favicon("hulu.com"),
         accent = Color(0xFF1CE783),
-        accentSecondary = Color(0xFF0B8B4B)
+        accentSecondary = Color(0xFF0B8B4B),
+        dialName = "Hulu"
     ),
     RemoteShortcutApp(
         id = "apple_tv",
@@ -141,7 +154,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "AT",
         iconUrl = favicon("tv.apple.com"),
         accent = Color(0xFF2F3C52),
-        accentSecondary = Color(0xFF7D91B3)
+        accentSecondary = Color(0xFF7D91B3),
+        dialName = "AppleTV"
     ),
     RemoteShortcutApp(
         id = "max",
@@ -150,7 +164,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "MX",
         iconUrl = favicon("max.com"),
         accent = Color(0xFF7B31FF),
-        accentSecondary = Color(0xFF2C0B63)
+        accentSecondary = Color(0xFF2C0B63),
+        dialName = "Max"
     ),
     RemoteShortcutApp(
         id = "paramount_plus",
@@ -159,7 +174,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "P+",
         iconUrl = favicon("paramountplus.com"),
         accent = Color(0xFF0064FF),
-        accentSecondary = Color(0xFF00308F)
+        accentSecondary = Color(0xFF00308F),
+        dialName = "ParamountPlus"
     ),
     RemoteShortcutApp(
         id = "peacock",
@@ -168,7 +184,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "P",
         iconUrl = favicon("peacocktv.com"),
         accent = Color(0xFF000000),
-        accentSecondary = Color(0xFFFAA21B)
+        accentSecondary = Color(0xFFFAA21B),
+        dialName = "PeacockTV"
     ),
     RemoteShortcutApp(
         id = "discovery_plus",
@@ -177,7 +194,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "D+",
         iconUrl = favicon("discoveryplus.com"),
         accent = Color(0xFF0073FF),
-        accentSecondary = Color(0xFF003B85)
+        accentSecondary = Color(0xFF003B85),
+        dialName = "DiscoveryPlus"
     ),
     RemoteShortcutApp(
         id = "pluto_tv",
@@ -186,7 +204,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "PT",
         iconUrl = favicon("pluto.tv"),
         accent = Color(0xFFFFE000),
-        accentSecondary = Color(0xFF1A1F71)
+        accentSecondary = Color(0xFF1A1F71),
+        dialName = "PlutoTV"
     ),
     RemoteShortcutApp(
         id = "tubi",
@@ -195,7 +214,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "Tu",
         iconUrl = favicon("tubitv.com"),
         accent = Color(0xFFFF4D00),
-        accentSecondary = Color(0xFF000000)
+        accentSecondary = Color(0xFF000000),
+        dialName = "Tubi"
     ),
     RemoteShortcutApp(
         id = "espn",
@@ -204,7 +224,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "E",
         iconUrl = favicon("espn.com"),
         accent = Color(0xFFD11217),
-        accentSecondary = Color(0xFF3F0408)
+        accentSecondary = Color(0xFF3F0408),
+        dialName = "ESPN"
     ),
     RemoteShortcutApp(
         id = "vimeo",
@@ -213,7 +234,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "V",
         iconUrl = favicon("vimeo.com"),
         accent = Color(0xFF1AB7EA),
-        accentSecondary = Color(0xFF005A6F)
+        accentSecondary = Color(0xFF005A6F),
+        dialName = "Vimeo"
     ),
     RemoteShortcutApp(
         id = "mubi",
@@ -222,7 +244,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "M",
         iconUrl = favicon("mubi.com"),
         accent = Color(0xFF131313),
-        accentSecondary = Color(0xFF4A4A4A)
+        accentSecondary = Color(0xFF4A4A4A),
+        dialName = "MUBI"
     ),
     RemoteShortcutApp(
         id = "jiohotstar",
@@ -231,7 +254,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "JH",
         iconUrl = favicon("hotstar.com"),
         accent = Color(0xFF6A54FF),
-        accentSecondary = Color(0xFF19C6FF)
+        accentSecondary = Color(0xFF19C6FF),
+        dialName = "Hotstar"
     ),
     RemoteShortcutApp(
         id = "sonyliv",
@@ -240,7 +264,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "SL",
         iconUrl = favicon("sonyliv.com"),
         accent = Color(0xFF8E5BFF),
-        accentSecondary = Color(0xFFFF4D7A)
+        accentSecondary = Color(0xFFFF4D7A),
+        dialName = "SonyLIV"
     ),
     RemoteShortcutApp(
         id = "zee5",
@@ -249,7 +274,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "Z5",
         iconUrl = favicon("zee5.com"),
         accent = Color(0xFF8230C9),
-        accentSecondary = Color(0xFFFF1A6E)
+        accentSecondary = Color(0xFFFF1A6E),
+        dialName = "ZEE5"
     ),
     RemoteShortcutApp(
         id = "jiocinema",
@@ -258,7 +284,8 @@ private val defaultRemoteShortcutApps = listOf(
         mark = "JC",
         iconUrl = "https://upload.wikimedia.org/wikipedia/en/thumb/0/00/JioCinema_logo.svg/512px-JioCinema_logo.svg.png",
         accent = Color(0xFFE60012),
-        accentSecondary = Color(0xFFFF7777)
+        accentSecondary = Color(0xFFFF7777),
+        dialName = "JioCinema"
     )
 )
 

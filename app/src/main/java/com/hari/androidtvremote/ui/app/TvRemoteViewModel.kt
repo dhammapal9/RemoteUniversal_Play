@@ -30,6 +30,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,7 +62,11 @@ data class TvRemoteUiState(
     val volumeFraction: Float = 0.5f,
     val isVoiceActive: Boolean = false,
     val cast: CastPlaybackUiState = CastPlaybackUiState(),
-    val showRatingPrompt: Boolean = false
+    val showRatingPrompt: Boolean = false,
+    // Null = not probed yet OR probe couldn't run (no DIAL endpoint). When
+    // null, the Apps tab should show every catalog entry. When non-null, it
+    // contains the set of app ids the TV reported as installed.
+    val installedAppIds: Set<String>? = null
 )
 
 class TvRemoteViewModel(application: Application) : AndroidViewModel(application),
@@ -88,9 +94,23 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
     private var launchSession: LaunchSession? = null
     private var connectionGeneration = 0
     private var autoReconnectInFlight = false
+    private var autoReconnectJob: Job? = null
+    private var consecutiveReconnectFailures = 0
     private var manualDisconnectUntilMs = 0L
     private var imeFieldCounter = 0
     private var imeCounter = 0
+
+    /**
+     * True if the user clicked a quick-launch app within the grace window —
+     * any disconnect right after that is treated as a side-effect of the TV
+     * switching focus to the new app, NOT a real connection loss. We swallow
+     * it so the UI keeps showing the device as connected.
+     */
+    private fun isInsideAppLinkGrace(): Boolean {
+        if (lastAppLaunchTime <= 0L) return false
+        val elapsed = System.currentTimeMillis() - lastAppLaunchTime
+        return elapsed in 0..APP_LINK_DISCONNECT_GRACE_MS
+    }
 
     init {
         discoveryManager?.addListener(this)
@@ -178,6 +198,8 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
         prefs.edit { putBoolean(Constant.PREF_MANUAL_DISCONNECT, manual) }
         if (manual) {
             autoReconnectInFlight = false
+            autoReconnectJob?.cancel()
+            consecutiveReconnectFailures = 0
             manualDisconnectUntilMs = System.currentTimeMillis() + MANUAL_DISCONNECT_COOLDOWN_MS
         }
         app.androidRemoteTv?.abort()
@@ -248,6 +270,11 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
 
     fun sendKey(keyCode: Remotemessage.RemoteKeyCode) {
         viewModelScope.launch(Dispatchers.IO) {
+            // Fire-and-forget. If the socket is dead writeBytes silently
+            // no-ops — we do NOT try to reconnect here, because retrying
+            // aggressively against a busy TV can put its remote-control
+            // service into a bad state (visible as ECONNREFUSED across all
+            // remote apps until the TV is restarted).
             app.androidRemoteTv?.sendCommand(keyCode, Remotemessage.RemoteDirection.SHORT)
         }
     }
@@ -301,6 +328,8 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private var lastAppLaunchTime = 0L
+
     fun launchQuickApp(appName: String) {
         val appUrl = when (appName) {
             "Netflix" -> "https://www.netflix.com/title.*"
@@ -328,13 +357,58 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
             "Vimeo" -> "https://vimeo.com/"
             "MUBI" -> "https://mubi.com/"
             else -> null
-        }
-        if (appUrl == null) {
-            showStatus("This shortcut is not mapped yet.", isError = true)
-            return
-        }
+        } ?: return
+
+        lastAppLaunchTime = System.currentTimeMillis()
         viewModelScope.launch(Dispatchers.IO) {
-            app.androidRemoteTv?.sendAppLink(appUrl)
+            // Pure fire-and-forget. We do NOT auto-reconnect on failure —
+            // aggressive reconnects against a TV that's mid-app-launch can
+            // wedge its Android-TV Remote Service into a refuse-all state.
+            // If the TV closes the socket because the app isn't installed,
+            // the user will see writes silently no-op; they can manually
+            // reconnect from Discovery if they need to.
+            try {
+                app.androidRemoteTv?.sendAppLink(appUrl)
+            } catch (t: Throwable) {
+                Log.w(TAG, "launchQuickApp($appName) ignored failure: ${t.message}")
+            }
+        }
+    }
+
+    /**
+     * Serializes silent-reconnect attempts so that a rapid burst of clicks
+     * (Plex → JioCinema → Netflix) doesn't fire several concurrent SSL
+     * handshakes against the TV.
+     */
+    private val socketHealMutex = Mutex()
+
+    /**
+     * Probe the remote socket; if it's gone, transparently rebuild it using
+     * the saved pairing credentials. UI state is left untouched in all
+     * cases — by design the user must never see a disconnect just because
+     * an app-launch URL had no installed handler.
+     */
+    private suspend fun ensureRemoteSocketSilently() {
+        // Fast happy-path check outside the lock — the vast majority of
+        // calls (every button press) hit this and return immediately.
+        val remote = app.androidRemoteTv
+        if (remote != null && remote.isRemoteSocketAlive()) return
+        if (!prefs.getBoolean(Constant.PIN, false)) return
+        val host = prefs.getString(Constant.HOST, null) ?: return
+
+        socketHealMutex.withLock {
+            // Re-check inside the lock — another coroutine may have already
+            // rebuilt the socket while we were waiting our turn.
+            val current = app.androidRemoteTv
+            if (current != null && current.isRemoteSocketAlive()) return@withLock
+            try {
+                val rebuilt = current ?: app.getOrCreateAndroidRemoteTv()
+                rebuilt.silentReconnect(host)
+                app.androidRemoteTv = rebuilt
+                Log.i(TAG, "Silent remote reconnect succeeded")
+            } catch (t: Throwable) {
+                Log.w(TAG, "Silent remote reconnect failed (ignored): ${t.message}")
+            }
         }
     }
 
@@ -574,19 +648,32 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
 
     override fun onDeviceRemoved(manager: DiscoveryManager?, device: ConnectableDevice?) {
         device ?: return
+        // CRITICAL: do NOT tear down the connection just because SSDP stopped
+        // seeing this device. TVs routinely drop SSDP advertisements while
+        // transitioning state (e.g. while launching an app like JioCinema /
+        // Plex / Peacock) — but the remote-control socket is still alive.
+        // The previous behaviour called disconnectCurrentDevice(manual=true),
+        // which set PREF_MANUAL_DISCONNECT=true, started a 15s cooldown, and
+        // wiped the device from the list — leaving the user with a stuck
+        // "loading" Discovery screen and no way to recover except restarting
+        // the app. Onlinkrelative remove the device from our cache when it's
+        // NOT the active one. For the active device, ignore the removal —
+        // the real disconnect signal will come from onDeviceDisconnected.
+        if (activeDeviceId == device.id) {
+            return
+        }
         synchronized(discoveredDevices) {
             discoveredDevices.remove(device.id)
         }
         device.ipAddress?.let { reachableHosts.remove(it) }
-        if (activeDeviceId == device.id) {
-            disconnectCurrentDevice()
-        } else {
-            publishDeviceSnapshot()
-        }
+        publishDeviceSnapshot()
     }
 
     override fun onDiscoveryFailed(manager: DiscoveryManager?, error: ServiceCommandError?) {
-        showStatus(error?.message ?: "Device discovery failed.", isError = true)
+        // Don't surface raw socket-level discovery errors to the user — keep
+        // the message friendly so they don't see ECONNREFUSED-style noise.
+        Log.w(TAG, "Discovery failed: ${error?.message}")
+        showStatus("Device discovery paused — will retry.", isError = true)
     }
 
     override fun onCleared() {
@@ -750,6 +837,8 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
                 activeDeviceId = connectableDevice.id
                 pendingDeviceId = null
                 autoReconnectInFlight = false
+                consecutiveReconnectFailures = 0
+                autoReconnectJob?.cancel()
                 val currentConnections = prefs.getInt("successful_connections", 0) + 1
                 val hasRated = prefs.getBoolean("has_rated_or_feedback", false)
                 val lastAsked = prefs.getInt("last_asked_connection", 0)
@@ -763,6 +852,7 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
                 }
                 imeFieldCounter = app.lastFieldCounter.coerceAtLeast(0)
                 observeRealVolume()
+                probeInstalledApps(connectableDevice, connectionToken)
                 _uiState.update {
                     it.copy(
                         connectedDevice = connectableDevice.toUiModel(
@@ -895,7 +985,7 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun attemptAutoReconnect() {
-        if (autoReconnectInFlight || _uiState.value.isConnecting || _uiState.value.connectedDevice != null) {
+        if (autoReconnectInFlight || _uiState.value.isConnecting || activeDeviceId != null) {
             return
         }
         if (!prefs.getBoolean(Constant.PREF_AUTO_RECONNECT, true) || !prefs.getBoolean(Constant.PIN, false)) {
@@ -961,16 +1051,66 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
             handleWrongPairingCode()
             return
         }
+        // App-link grace: the TV is shuffling its remote service after a
+        // quick-launch click — don't disturb the UI.
+        if (isInsideAppLinkGrace()) {
+            Log.i(TAG, "Suppressing connect error — within app-link grace: $message")
+            return
+        }
+        // Transient socket errors (ECONNREFUSED, timeouts, broken pipe,
+        // etc.) happen routinely on Android TV — port 6466 is briefly
+        // unavailable after each app launch or while the TV is busy. We
+        // NEVER show these to the user. Just clear the loading spinner so
+        // Discovery isn't stuck, then re-queue another silent retry.
+        // The retry keeps going as long as the TV is the active device —
+        // when the TV's remote service comes back, the next attempt wins.
+        if (isTransientConnectError(message)) {
+            consecutiveReconnectFailures += 1
+            autoReconnectInFlight = false
+            pendingDeviceId = null
+            publishDeviceSnapshot()
+            Log.i(TAG, "Transient connect error #$consecutiveReconnectFailures — silent: $message")
+            // Schedule at most MAX_CONSECUTIVE_RECONNECT_FAILURES retries
+            // (scheduleAutoReconnect itself bails after the cap).
+            scheduleAutoReconnect()
+            return
+        }
+        // Non-transient (e.g. genuine pairing issue) — still don't dump
+        // the raw socket message at the user; show a friendly hint instead.
         autoReconnectInFlight = false
         pendingDeviceId = null
+        consecutiveReconnectFailures += 1
         publishDeviceSnapshot()
-        showStatus(message, isError = true)
+        Log.w(TAG, "Connect error (non-transient): $message")
         if (activeDeviceId == device.id) {
             handleDeviceDisconnected()
         }
     }
 
+    private fun isTransientConnectError(message: String): Boolean {
+        val lower = message.lowercase()
+        return lower.contains("econnrefused") ||
+            lower.contains("connection refused") ||
+            lower.contains("connect timed out") ||
+            lower.contains("timeout") ||
+            lower.contains("connection reset") ||
+            lower.contains("broken pipe") ||
+            lower.contains("network is unreachable") ||
+            lower.contains("no route to host")
+    }
+
     private fun handleDeviceDisconnected() {
+        // Suppress entirely if the user just clicked a quick-launch app — the
+        // TV almost certainly tore down the session as a side-effect of
+        // launching the new app (or because the URL has no installed
+        // handler, e.g. Plex/Peacock). Keep the UI in connected state, don't
+        // schedule reconnects, don't show error toasts. The user explicitly
+        // asked for the app to always remain working.
+        if (isInsideAppLinkGrace()) {
+            Log.i(TAG, "Suppressing disconnect — within app-link grace window")
+            return
+        }
+
         autoReconnectInFlight = false
         pendingDeviceId = null
         activeDeviceId = null
@@ -981,10 +1121,12 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
         Constant.connectableDevice = null
         Constant.isConnected.value = false
         val manuallyDisconnected = prefs.getBoolean(Constant.PREF_MANUAL_DISCONNECT, false)
+
         imeFieldCounter = 0
         imeCounter = 0
         app.lastImeText = ""
         app.lastFieldCounter = -1
+
         _uiState.update {
             it.copy(
                 connectedDevice = null,
@@ -994,11 +1136,109 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
                 isVoiceActive = false,
                 cast = CastPlaybackUiState(),
                 statusMessage = if (manuallyDisconnected) "Disconnected" else "Connection lost",
-                isError = !manuallyDisconnected
+                isError = !manuallyDisconnected,
+                installedAppIds = null
             )
         }
         publishDeviceSnapshot()
         if (!manuallyDisconnected) {
+            scheduleAutoReconnect()
+        }
+    }
+
+    /**
+     * Probe the TV's DIAL endpoint to find out which streaming apps are
+     * actually installed. Runs entirely on IO, never throws to the caller,
+     * and is best-effort: if anything fails (no DIAL service, network
+     * blip, weird XML) we simply leave `installedAppIds = null` and the
+     * AppsScreen falls back to showing the full catalog.
+     */
+    private fun probeInstalledApps(device: ConnectableDevice, connectionToken: Int) {
+        val host = device.ipAddress ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val dialBase = resolveDialApplicationUrl(host) ?: run {
+                Log.i(TAG, "DIAL endpoint not found for $host — keeping full app list")
+                return@launch
+            }
+            val installed = mutableSetOf<String>()
+            for (app in resolveRemoteShortcutApps(emptyList())) {
+                val dialName = app.dialName ?: continue
+                try {
+                    val url = java.net.URL(dialBase.trimEnd('/') + "/" + dialName)
+                    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        connectTimeout = 2_500
+                        readTimeout = 2_500
+                        instanceFollowRedirects = true
+                    }
+                    val code = try { conn.responseCode } finally { conn.disconnect() }
+                    if (code in 200..299) {
+                        installed += app.id
+                    }
+                } catch (_: Throwable) {
+                    // App not installed or probe failed — leave it out, no error
+                }
+            }
+            if (!isActiveConnection(connectionToken)) return@launch
+            _uiState.update {
+                it.copy(installedAppIds = if (installed.isEmpty()) null else installed)
+            }
+            Log.i(TAG, "DIAL probe found ${installed.size} installed apps: $installed")
+        }
+    }
+
+    /**
+     * Resolve the DIAL Application-URL for a given TV by hitting the
+     * standard SSDP/DIAL discovery port (8008/8009 device description),
+     * then parsing the Application-URL header from /ssdp/device-desc.xml.
+     * Returns null if anything goes wrong.
+     */
+    private fun resolveDialApplicationUrl(host: String): String? {
+        // Try Chromecast/AndroidTV defaults first; many TVs expose the
+        // device description on 8008 with the DIAL Application-URL header.
+        val candidatePorts = listOf(8008, 8060, 56789, 1980)
+        for (port in candidatePorts) {
+            try {
+                val url = java.net.URL("http://$host:$port/ssdp/device-desc.xml")
+                val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 1_500
+                    readTimeout = 1_500
+                }
+                try {
+                    if (conn.responseCode in 200..299) {
+                        val appUrl = conn.getHeaderField("Application-URL")
+                        if (!appUrl.isNullOrBlank()) {
+                            return appUrl
+                        }
+                    }
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (_: Throwable) {
+                // Try next port
+            }
+        }
+        return null
+    }
+
+    private fun scheduleAutoReconnect() {
+        // ONE silent retry, well-delayed. Hammering port 6466 too often
+        // can put the TV's Remote Service into a state where it refuses
+        // every remote-control app (visible across the system as
+        // ECONNREFUSED until the TV is restarted). Cap at MAX retries —
+        // beyond that, give the TV a rest. The user can still manually
+        // reconnect from Discovery whenever they want.
+        if (consecutiveReconnectFailures >= MAX_CONSECUTIVE_RECONNECT_FAILURES) {
+            Log.i(TAG, "Reconnect cap hit — backing off to avoid wedging TV service")
+            return
+        }
+        autoReconnectJob?.cancel()
+        val attempt = consecutiveReconnectFailures.coerceAtLeast(0)
+        val delayMs = (POST_DISCONNECT_GRACE_MS * (attempt + 1))
+            .coerceAtMost(MAX_RECONNECT_BACKOFF_MS)
+        autoReconnectJob = viewModelScope.launch {
+            delay(delayMs)
             attemptAutoReconnect()
         }
     }
@@ -1206,5 +1446,9 @@ class TvRemoteViewModel(application: Application) : AndroidViewModel(application
         const val REMOTE_PORT = 6466
         const val REACHABILITY_TIMEOUT_MS = 700
         const val MANUAL_DISCONNECT_COOLDOWN_MS = 15_000L
+        const val POST_DISCONNECT_GRACE_MS = 2_000L
+        const val MAX_CONSECUTIVE_RECONNECT_FAILURES = 4
+        const val APP_LINK_DISCONNECT_GRACE_MS = 10_000L
+        const val MAX_RECONNECT_BACKOFF_MS = 30_000L
     }
 }

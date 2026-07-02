@@ -338,11 +338,19 @@ fun HomeScreen(
                         onToggleVoice = { handleRemoteAction(onToggleVoice) }
                     )
 
-                    HomeTab.Apps -> AppsScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        quickApps = remoteApps,
-                        onQuickApp = { appName -> handleRemoteAction { onQuickApp(appName) } }
-                    )
+                    HomeTab.Apps -> {
+                        // If the DIAL probe gave us a list of apps the TV
+                        // actually has installed, narrow the grid to just
+                        // those. Otherwise show every catalog entry.
+                        val visibleApps = sessionState.installedAppIds?.let { installed ->
+                            remoteApps.filter { it.id in installed }.ifEmpty { remoteApps }
+                        } ?: remoteApps
+                        AppsScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            quickApps = visibleApps,
+                            onQuickApp = { appName -> handleRemoteAction { onQuickApp(appName) } }
+                        )
+                    }
 
                     HomeTab.Cast -> CastScreen(
                         modifier = Modifier.padding(innerPadding),

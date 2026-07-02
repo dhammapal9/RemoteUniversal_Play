@@ -52,6 +52,18 @@ public class RemoteSession {
     // Central socket health flag.
     private final AtomicBoolean socketAlive = new AtomicBoolean(false);
 
+    // Guards onDisconnected so writeBytes failure + reader thread exit + abort()
+    // can't trigger duplicate disconnect callbacks on the UI layer.
+    private final AtomicBoolean disconnectNotified = new AtomicBoolean(false);
+
+    // Many Android TVs tear down the remote session when the user launches a
+    // new app (or when the URL has no installed handler — e.g. Plex/Peacock).
+    // We don't want that to drag the UI into a disconnect/reconnect cascade,
+    // so swallow the disconnect notification if it fires within this grace
+    // window of a sendAppCommand.
+    private static final long APP_LINK_DISCONNECT_GRACE_MS = 10_000L;
+    private volatile long lastAppLinkAtMs = 0L;
+
     int retry;
     private OutputStream outputStream;  // always a SynchronizedOutputStream after connect()
     private PacketParser packetParser;
@@ -71,6 +83,8 @@ public class RemoteSession {
     }
 
     public void connect() throws GeneralSecurityException, IOException, InterruptedException, PairingException {
+        disconnectNotified.set(false);
+        lastAppLinkAtMs = 0L;
         try {
             SSLContext sSLContext = SSLContext.getInstance("TLS");
             sSLContext.init(
@@ -79,11 +93,16 @@ public class RemoteSession {
                     new SecureRandom()
             );
             SSLSocketFactory sslSocketFactory = sSLContext.getSocketFactory();
-            SSLSocket sSLSocket = (SSLSocket) sslSocketFactory.createSocket(mHost, mPort);
+            // Pre-create an unconnected SSL socket so we can bound the TCP
+            // handshake — otherwise a TV that's mid-transition (e.g. just
+            // launched an app and isn't accepting on 6466 yet) leaves the
+            // call blocked at OS-level for ~60s and stalls the whole UI.
+            SSLSocket sSLSocket = (SSLSocket) sslSocketFactory.createSocket();
             sSLSocket.setNeedClientAuth(true);
             sSLSocket.setUseClientMode(true);
             sSLSocket.setKeepAlive(true);
             sSLSocket.setTcpNoDelay(true);
+            sSLSocket.connect(new java.net.InetSocketAddress(mHost, mPort), 8_000);
             sSLSocket.startHandshake();
 
             outputStream = new SynchronizedOutputStream(sSLSocket.getOutputStream());
@@ -179,6 +198,13 @@ public class RemoteSession {
                 Log.e(TAG, "Message reader error: " + e.getMessage());
             }
             Log.i(TAG, "Message reader thread exiting");
+            // Mark the socket dead so subsequent writes silently drop, but
+            // DO NOT notify the UI. The user explicitly asked for the app to
+            // remain in a usable/connected state regardless of what the TV
+            // does — clicking apps must never trigger a disconnect cascade.
+            // A real disconnect surfaces only when the user manually opens
+            // Discovery and reconnects.
+            socketAlive.set(false);
         }, "RemoteSession-Reader").start();
     }
 
@@ -209,10 +235,28 @@ public class RemoteSession {
         voiceSessionActive.set(false);
         syncedVoiceSessionId = -1;
         if (packetParser != null) packetParser.abort();
+        // abort() means a manual / explicit teardown — silence the disconnect
+        // callback so we don't fight the caller that's already disconnecting.
+        disconnectNotified.set(true);
+    }
+
+    /** Called the first time the socket transitions to dead. */
+    private void notifyDisconnectedOnce() {
+        if (disconnectNotified.compareAndSet(false, true)) {
+            try {
+                mRemoteSessionListener.onDisconnected();
+            } catch (Exception cbErr) {
+                Log.e(TAG, "onDisconnected callback threw: " + cbErr.getMessage());
+            }
+        }
     }
 
     private boolean writeBytes(byte[] data, String callerTag) {
         if (!socketAlive.get()) {
+            // Silently drop — the TV may briefly close the socket while it
+            // launches an app or has no handler for the URL. The reader
+            // thread is the canonical disconnect signal; we don't want one
+            // failed write to tear down the UI and trigger a reconnect race.
             Log.w(TAG, callerTag + " skipped: socket not alive");
             return false;
         }
@@ -251,7 +295,14 @@ public class RemoteSession {
     }
 
     public void sendAppCommand(String appLink) {
-        writeBytes(mMessageManager.createAppCommand(appLink), "sendAppCommand");
+        lastAppLinkAtMs = System.currentTimeMillis();
+        try {
+            writeBytes(mMessageManager.createAppCommand(appLink), "sendAppCommand");
+        } catch (Throwable t) {
+            // Fire-and-forget — absorb anything (bad URL, dead socket, etc.)
+            // so the UI is never disturbed by a failed app launch.
+            Log.w(TAG, "sendAppCommand ignored failure: " + t.getMessage());
+        }
     }
 
     public void sendImeEnter() {
